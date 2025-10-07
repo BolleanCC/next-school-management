@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, Legend, Rectangle, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const data = [
     {
@@ -32,6 +33,24 @@ const data = [
 ];
 
 const AttendanceChart = () => {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        return (
+            <div className="bg-white rounded-xl w-full h-full p-4">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-lg font-semibold">Attendance</h1>
+                    <Image src="/moreDark.png" alt="" width={20} height={20} />
+                </div>
+                <div className="h-[90%] bg-gray-100 animate-pulse rounded"></div>
+            </div>
+        );
+    }
+
     return <div className="bg-white rounded-xl w-full h-full p-4">
         <div className="flex justify-between items-center">
             <h1 className="text-lg font-semibold">Attendance</h1>
