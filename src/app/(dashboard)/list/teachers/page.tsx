@@ -5,6 +5,7 @@ import Table from "@/components/Table";
 import Link from "next/link";
 import { role } from "@/lib/data";
 import { teachersData } from "@/lib/data";
+import FormModal from "@/components/FormModal";
 
 type Teacher = {
     id: number;
@@ -86,9 +87,14 @@ const TeachersListpage = () => {
                         </button>
                     </Link>
                     {role === "admin" && (
-                        <button className="w-7 h-7 flex items-center justify-center rounded-full bg-purple">
-                            <Image src="/delete.png" alt="" width={16} height={16} />
-                        </button>
+                        // <button className="w-7 h-7 flex items-center justify-center rounded-full bg-purple">
+                        //     <Image src="/delete.png" alt="" width={16} height={16} />
+                        // </button>
+                        <FormModal
+                            table="teacher"
+                            type="delete"
+                            data={item}
+                        />
                     )}
                 </div>
             </td>
@@ -108,9 +114,15 @@ const TeachersListpage = () => {
                     <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                         <Image src="/sort.png" alt="add" width={14} height={14} />
                     </button>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
+                    {/* <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                         <Image src="/plus.png" alt="add" width={14} height={14} />
-                    </button>
+                    </button> */}
+                    {role === "admin" && (
+                        <FormModal
+                            table="teacher"
+                            type="create"
+                        />
+                    )}
                 </div>
             </div>
         </div>

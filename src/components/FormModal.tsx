@@ -1,45 +1,26 @@
-
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useState } from "react";
 
-// Simple form components for now - can be replaced with proper forms later
-const TeacherForm = ({ type, data }: { type: "create" | "update"; data?: any }) => (
-    <form className="p-4 flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">{type === "create" ? "Add New Teacher" : "Update Teacher"}</h2>
-        <input type="text" placeholder="Teacher Name" className="p-2 border rounded-md" />
-        <input type="email" placeholder="Email" className="p-2 border rounded-md" />
-        <input type="text" placeholder="Phone" className="p-2 border rounded-md" />
-        <input type="text" placeholder="Subjects (comma separated)" className="p-2 border rounded-md" />
-        <input type="text" placeholder="Classes (comma separated)" className="p-2 border rounded-md" />
-        <textarea placeholder="Address" className="p-2 border rounded-md" rows={3}></textarea>
-        <button type="submit" className="bg-sky text-white py-2 px-4 rounded-md">
-            {type === "create" ? "Create Teacher" : "Update Teacher"}
-        </button>
-    </form>
-);
+// USE LAZY LOADING
 
-const StudentForm = ({ type, data }: { type: "create" | "update"; data?: any }) => (
-    <form className="p-4 flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">{type === "create" ? "Add New Student" : "Update Student"}</h2>
-        <input type="text" placeholder="Student Name" className="p-2 border rounded-md" />
-        <input type="email" placeholder="Email" className="p-2 border rounded-md" />
-        <input type="text" placeholder="Phone" className="p-2 border rounded-md" />
-        <input type="number" placeholder="Grade" className="p-2 border rounded-md" />
-        <input type="text" placeholder="Class" className="p-2 border rounded-md" />
-        <textarea placeholder="Address" className="p-2 border rounded-md" rows={3}></textarea>
-        <button type="submit" className="bg-sky text-white py-2 px-4 rounded-md">
-            {type === "create" ? "Create Student" : "Update Student"}
-        </button>
-    </form>
-);
+// import TeacherForm from "./forms/TeacherForm";
+// import StudentForm from "./forms/StudentForm";
+
+const TeacherForm = dynamic(() => import("@/components/forms/TeacherForm"), {
+    loading: () => <h1>Loading...</h1>,
+});
+// const StudentForm = dynamic(() => import("./forms/StudentForm"), {
+//     loading: () => <h1>Loading...</h1>,
+// });
 
 const forms: {
     [key: string]: (type: "create" | "update", data?: any) => JSX.Element;
 } = {
     teacher: (type, data) => <TeacherForm type={type} data={data} />,
-    student: (type, data) => <StudentForm type={type} data={data} />
+    // student: (type, data) => <StudentForm type={type} data={data} />
 };
 
 const FormModal = ({
@@ -61,7 +42,7 @@ const FormModal = ({
     | "attendance"
     | "event"
     | "announcement";
-    type: "create" | "update" | "delete" | "edit";
+    type: "create" | "update" | "delete";
     data?: any;
     id?: number;
 }) => {
