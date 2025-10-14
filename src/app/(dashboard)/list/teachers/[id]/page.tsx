@@ -43,6 +43,7 @@ const SingleTeacherPage = () => {
                                         bloodType: "A+",
                                         dateOfBirth: "2000-01-01",
                                         sex: "male",
+                                        img: "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=1200",
                                     }}
                                 />}
                             </div>
