@@ -76,7 +76,7 @@ const ClassListPage = () => {
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
-                        {role === "admin" && <FormModal table="class" type="edit" />}
+                        {role === "admin" && <FormModal table="class" type="create" />}
                     </div>
                 </div>
             </div>
