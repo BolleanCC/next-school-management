@@ -8,6 +8,7 @@ import { teachersData } from "@/lib/data";
 import FormModal from "@/components/FormModal";
 import { Class, Subject, Teacher } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { ITEMS_PER_PAGE } from "@/lib/settings";
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 const columns = [
@@ -90,14 +91,22 @@ const renderRow = (item: TeacherList) => (
     </tr>
 );
 
-const TeachersListpage = async () => {
-    const data = await prisma.teacher.findMany({
-        include: {
-            subjects: true,
-            classes: true,
-        },
-    });
-    console.log(data);
+const TeachersListpage = async ({ searchParams }: { searchParams: { [key: string]: string | undefined; } }) => {
+    const { page, ...queryParams } = searchParams;
+
+    const p = page ? parseInt(page) : 1;
+
+    const [data, count] = await prisma.$transaction([
+        prisma.teacher.findMany({
+            include: {
+                subjects: true,
+                classes: true,
+            },
+            take: ITEMS_PER_PAGE,
+            skip: (p - 1) * ITEMS_PER_PAGE,
+        }),
+        prisma.teacher.count(),
+    ]);
 
 
     return <div className="p-4 rounded-md bg-white flex-1 mt-0">
@@ -128,7 +137,7 @@ const TeachersListpage = async () => {
         {/* {LIST} */}
         <Table columns={columns} renderRow={renderRow} data={data} />
         {/* {PAGINATION} */}
-        <Pagination />
+        <Pagination count={count} page={p} />
     </div>;
 };
 
