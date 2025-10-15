@@ -9,6 +9,7 @@ import FormModal from "@/components/FormModal";
 import { Class, Subject, Teacher } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
+import { Prisma } from "@prisma/client";
 
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 const columns = [
@@ -91,13 +92,32 @@ const renderRow = (item: TeacherList) => (
     </tr>
 );
 
-const TeachersListpage = async ({ searchParams }: { searchParams: { [key: string]: string | undefined; } }) => {
-    const { page, ...queryParams } = searchParams;
+const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {
+    const resolvedSearchParams = await searchParams;
+    const { page, ...queryParams } = resolvedSearchParams;
 
     const p = page ? parseInt(page) : 1;
 
+    const query: Prisma.TeacherWhereInput = {}
+
+    if (queryParams) {
+        for (const [key, value] of Object.entries(queryParams)) {
+            if (value !== undefined) {
+                switch (key) {
+                    case "classId":
+                        query.lessons = { some: { classId: parseInt(value) } }
+                        break;
+                }
+            }
+        }
+    }
+
+    console.log('Query params:', queryParams);
+    console.log('Query:', JSON.stringify(query, null, 2));
+
     const [data, count] = await prisma.$transaction([
         prisma.teacher.findMany({
+            where: query,
             include: {
                 subjects: true,
                 classes: true,
@@ -105,8 +125,10 @@ const TeachersListpage = async ({ searchParams }: { searchParams: { [key: string
             take: ITEMS_PER_PAGE,
             skip: (p - 1) * ITEMS_PER_PAGE,
         }),
-        prisma.teacher.count(),
+        prisma.teacher.count({ where: query }),
     ]);
+
+    console.log('Found teachers:', data.length);
 
 
     return <div className="p-4 rounded-md bg-white flex-1 mt-0">
