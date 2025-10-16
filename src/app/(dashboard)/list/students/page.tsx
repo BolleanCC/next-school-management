@@ -95,6 +95,9 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                     case "search":
                         query.name = { contains: value, mode: "insensitive" }
                         break;
+                    default:
+
+                        break;
                 }
             }
         }
