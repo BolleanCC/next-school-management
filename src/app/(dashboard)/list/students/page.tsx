@@ -43,7 +43,7 @@ const columns = [
 const renderRow = (item: StudentList) => (
     <tr
         key={item.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
+        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
     >
         <td className="flex items-center gap-4 p-4">
             <Image
@@ -103,9 +103,6 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
         }
     }
 
-    console.log('Query params:', queryParams);
-    console.log('Query:', JSON.stringify(query, null, 2));
-
     const [data, count] = await prisma.$transaction([
         prisma.student.findMany({
             where: query,
@@ -117,8 +114,6 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
         }),
         prisma.student.count({ where: query }),
     ]);
-
-    console.log('Found teachers:', data.length);
 
 
     return <div className="p-4 rounded-md bg-white flex-1 mt-0">
