@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
-import { role } from "@/lib/utils";
+import { currentUserId, role } from "@/lib/utils";
 
 type AssignmentList = Assignment & { lesson: { subject: Subject, class: Class, teacher: Teacher } }
 
@@ -64,24 +64,37 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
 
     const query: Prisma.AssignmentWhereInput = {}
 
+    query.lesson = {};
+
     if (queryParams) {
         for (const [key, value] of Object.entries(queryParams)) {
             if (value !== undefined) {
                 switch (key) {
                     case "classId":
-                        query.lesson = { classId: parseInt(value) };
+                        query.lesson.classId = parseInt(value);
                         break;
                     case "teacherId":
-                        query.lesson = { teacherId: value };
+                        query.lesson.teacherId = value;
                         break;
                     case "search":
-                        query.lesson = { subject: { name: { contains: value, mode: "insensitive" } } }
+                        query.lesson.subject = { name: { contains: value, mode: "insensitive" } }
                         break;
                     default:
                         break;
                 }
             }
         }
+    }
+
+    // Role conditions
+    switch (role) {
+        case "admin":
+            break;
+        case "teacher":
+            query.lesson.teacherId = currentUserId!;
+            break;
+        default:
+            break;
     }
 
 
