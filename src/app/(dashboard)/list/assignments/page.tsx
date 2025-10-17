@@ -29,10 +29,10 @@ const columns = [
         accessor: "dueDate",
         className: "hidden md:table-cell",
     },
-    {
+    ...(role === "admin" || role === "teacher" ? [{
         header: "Actions",
         accessor: "action",
-    },
+    }] : []),
 ];
 
 const renderRow = (item: AssignmentList) => (
@@ -92,6 +92,12 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
             break;
         case "teacher":
             query.lesson.teacherId = currentUserId!;
+            break;
+        case "student":
+            query.lesson.class = { students: { some: { id: currentUserId! } } };
+            break;
+        case "parent":
+            query.lesson.class = { students: { some: { parentId: currentUserId! } } };
             break;
         default:
             break;
