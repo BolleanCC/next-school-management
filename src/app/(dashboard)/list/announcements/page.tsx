@@ -6,11 +6,10 @@ import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Announcement, Class, Prisma } from "@prisma/client";
-import { auth } from "@clerk/nextjs/server";
+import { role } from "@/lib/utils";
 
 
-const { sessionClaims } = await auth();
-const role = (sessionClaims?.metadata as { role?: string })?.role;
+
 
 type AnnouncementList = Announcement & { class: Class | null }
 
