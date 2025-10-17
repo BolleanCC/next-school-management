@@ -2,14 +2,11 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {
-    assignmentsData,
-    role,
-} from "@/lib/data";
 import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
+import { role } from "@/lib/utils";
 
 type AssignmentList = Assignment & { lesson: { subject: Subject, class: Class, teacher: Teacher } }
 
@@ -87,6 +84,8 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
         }
     }
 
+
+
     const [data, count] = await prisma.$transaction([
         prisma.assignment.findMany({
             where: query,
@@ -114,7 +113,7 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
-                        {role === "admin" || role === "teacher" && <FormModal table="assignment" type="create" />}
+                        {(role === "admin" || role === "teacher") && (<FormModal table="assignment" type="create" />)}
                     </div>
                 </div>
             </div>
