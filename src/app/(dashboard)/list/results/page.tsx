@@ -2,10 +2,7 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {
-    resultsData,
-    role,
-} from "@/lib/data";
+import { currentUserId, role } from "@/lib/utils";
 import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
@@ -42,10 +39,10 @@ const columns = [
         accessor: "date",
         className: "hidden md:table-cell",
     },
-    {
+    ...(role === "admin" || role === "teacher" ? [{
         header: "Actions",
         accessor: "action",
-    },
+    }] : []),
 ];
 
 const renderRow = (item: ResultList) => (
@@ -61,7 +58,7 @@ const renderRow = (item: ResultList) => (
         <td className="hidden md:table-cell">{new Intl.DateTimeFormat('en-US').format(new Date(item.startTime))}</td>
         <td>
             <div className="flex items-center gap-2">
-                {role === "admin" || role === "teacher" && (
+                {(role === "admin" || role === "teacher") && (
                     <>
                         <FormModal table="result" type="update" data={item} />
                         <FormModal table="result" type="delete" id={item.id} />
@@ -97,6 +94,23 @@ const ResultListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
                 }
             }
         }
+    }
+
+    // Role conditions
+    switch (role) {
+        case "admin":
+            break;
+        case "teacher":
+            query.OR = [{ exam: { lesson: { teacherId: currentUserId! } } }, { assignment: { lesson: { teacherId: currentUserId! } } }];
+            break;
+        case "student":
+            query.studentId = currentUserId!;
+            break;
+        case "parent":
+            query.student = { parentId: currentUserId! };
+            break;
+        default:
+            break;
     }
 
     const [dataRes, count] = await prisma.$transaction([
@@ -148,7 +162,7 @@ const ResultListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
-                        {role === "admin" || role === "teacher" && <FormModal table="result" type="create" />}
+                        {(role === "admin" || role === "teacher") && (<FormModal table="result" type="create" />)}
                     </div>
                 </div>
             </div>
