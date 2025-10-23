@@ -25,17 +25,6 @@ async function main() {
         });
     }
 
-    // CLASS
-    for (let i = 1; i <= 6; i++) {
-        await prisma.class.create({
-            data: {
-                name: `${i}A`,
-                gradeId: i,
-                capacity: Math.floor(Math.random() * (20 - 15 + 1)) + 15,
-            },
-        });
-    }
-
     // SUBJECT
     const subjectData = [
         { name: "Mathematics" },
@@ -54,7 +43,7 @@ async function main() {
         await prisma.subject.create({ data: subject });
     }
 
-    // TEACHER
+    // TEACHER (without class connections initially)
     for (let i = 1; i <= 15; i++) {
         await prisma.teacher.create({
             data: {
@@ -68,14 +57,40 @@ async function main() {
                 bloodType: "A+",
                 sex: i % 2 === 0 ? UserSex.MALE : UserSex.FEMALE,
                 subjects: { connect: [{ id: (i % 10) + 1 }] },
-                classes: { connect: [{ id: (i % 6) + 1 }] },
                 birthday: new Date(new Date().setFullYear(new Date().getFullYear() - 30)),
+            },
+        });
+    }
+
+    // CLASS (with supervisors)
+    for (let i = 1; i <= 6; i++) {
+        await prisma.class.create({
+            data: {
+                name: `${i}A`,
+                gradeId: i,
+                capacity: Math.floor(Math.random() * (20 - 15 + 1)) + 15,
+                supervisorId: `teacher${i}`,
             },
         });
     }
 
     // LESSON
     for (let i = 1; i <= 30; i++) {
+        // Generate random start hour between 8 AM and 3 PM (to allow for lesson duration)
+        const startHour = Math.floor(Math.random() * (15 - 8 + 1)) + 8; // 8-15 (8 AM to 3 PM)
+        // Generate random end hour 1-2 hours after start, but not later than 4 PM (16:00)
+        const lessonDuration = Math.min(
+            Math.floor(Math.random() * 2) + 1, // 1-2 hours
+            16 - startHour // ensure we don't go past 4 PM
+        );
+        const endHour = startHour + lessonDuration;
+
+        const startTime = new Date();
+        startTime.setHours(startHour, 0, 0, 0);
+
+        const endTime = new Date();
+        endTime.setHours(endHour, 0, 0, 0);
+
         await prisma.lesson.create({
             data: {
                 name: `Lesson${i}`,
@@ -84,8 +99,8 @@ async function main() {
                     Math.floor(Math.random() * Object.keys(Day).length)
                     ] as keyof typeof Day
                 ],
-                startTime: new Date(new Date().setHours(new Date().getHours() + 1)),
-                endTime: new Date(new Date().setHours(new Date().getHours() + 3)),
+                startTime,
+                endTime,
                 subjectId: (i % 10) + 1,
                 classId: (i % 6) + 1,
                 teacherId: `teacher${(i % 15) + 1}`,
