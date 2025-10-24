@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { SubjectSchema, subjectSchema } from "@/lib/formValidationSchemas";
 import { createSubject } from "@/lib/action";
-
+import { useActionState } from "react";
 
 
 const SubjectForm = ({
@@ -23,9 +23,12 @@ const SubjectForm = ({
         resolver: zodResolver(subjectSchema),
     });
 
+    // ACTION STATE
+    const [state, formAction] = useActionState(createSubject, { error: false, success: false });
+
     const onSubmit = handleSubmit((data) => {
         console.log(data);
-        createSubject(data);
+        formAction(data);
     });
 
     return (
@@ -40,6 +43,7 @@ const SubjectForm = ({
                     error={errors?.name}
                 />
             </div>
+            {state.error && <span className="text-red-500">Something went wrong!</span>}
             <button className="bg-blue-400 text-white p-2 rounded-md">
                 {type === "create" ? "Create" : "Update"}
             </button>
