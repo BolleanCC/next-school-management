@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { SubjectSchema, subjectSchema } from "@/lib/formValidationSchemas";
+import { createSubject } from "@/lib/action";
 
 
 
@@ -24,6 +25,7 @@ const SubjectForm = ({
 
     const onSubmit = handleSubmit((data) => {
         console.log(data);
+        createSubject(data);
     });
 
     return (
