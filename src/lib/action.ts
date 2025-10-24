@@ -9,15 +9,17 @@ type CurrentState = {
     success: boolean;
 };
 
-export const createSubject = async (currentState: CurrentState, data: SubjectSchema) => {
+export const createSubject = async (currentState: CurrentState, data: FormData) => {
+    console.log("Server action called with:", data.get("name"));
     try {
+        const name = data.get("name") as string;
         await prisma.subject.create({
-            data: { name: data.name },
+            data: { name },
         });
-        revalidatePath("/list/subjects");
+        console.log("Subject created successfully");
         return { error: false, success: true };
     } catch (error) {
+        console.error("Error creating subject:", error);
         return { error: true, success: false };
-        console.error(error);
     }
 };
