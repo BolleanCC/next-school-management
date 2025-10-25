@@ -26,7 +26,7 @@ const columns = [
     },
 ];
 
-const renderRow = (item: SubjectList) => (
+const renderRow = (item: SubjectList, relatedData?: any) => (
     <tr
         key={item.id}
         className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
@@ -37,7 +37,7 @@ const renderRow = (item: SubjectList) => (
             <div className="flex items-center gap-2">
                 {role === "admin" && (
                     <>
-                        <FormModal table="subject" type="update" data={item} />
+                        <FormModal table="subject" type="update" data={item} relatedData={relatedData} />
                         <FormModal table="subject" type="delete" id={item.id} />
                     </>
                 )}
@@ -68,7 +68,7 @@ const SubjectListPage = async ({ searchParams }: { searchParams: Promise<{ [key:
         }
     }
 
-    const [data, count] = await prisma.$transaction([
+    const [data, count, teachers] = await prisma.$transaction([
         prisma.subject.findMany({
             where: query,
             include: {
@@ -78,6 +78,13 @@ const SubjectListPage = async ({ searchParams }: { searchParams: Promise<{ [key:
             skip: (p - 1) * ITEMS_PER_PAGE,
         }),
         prisma.subject.count({ where: query }),
+        prisma.teacher.findMany({
+            select: {
+                id: true,
+                name: true,
+                surname: true,
+            },
+        }),
     ]);
 
 
@@ -96,12 +103,12 @@ const SubjectListPage = async ({ searchParams }: { searchParams: Promise<{ [key:
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
-                        {role === "admin" && <FormModal table="subject" type="create" />}
+                        {role === "admin" && <FormModal table="subject" type="create" relatedData={{ teachers }} />}
                     </div>
                 </div>
             </div>
             {/* LIST */}
-            <Table columns={columns} renderRow={renderRow} data={data} />
+            <Table columns={columns} renderRow={renderRow} data={data} relatedData={{ teachers }} />
             {/* PAGINATION */}
             <Pagination page={p} count={count} />
         </div>
