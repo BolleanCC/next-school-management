@@ -1,10 +1,9 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import { SubjectSchema, subjectSchema } from "@/lib/formValidationSchemas";
-import { createSubject } from "@/lib/action";
+import { SubjectSchema } from "@/lib/formValidationSchemas";
+import { createSubject, updateSubject } from "@/lib/action";
 import { useEffect, useActionState, Dispatch, SetStateAction } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -22,12 +21,13 @@ const SubjectForm = ({
     const {
         register,
         formState: { errors },
-    } = useForm<SubjectSchema>({
-        resolver: zodResolver(subjectSchema),
-    });
+    } = useForm<SubjectSchema>();
 
     // ACTION STATE
-    const [state, formAction] = useActionState(createSubject, { error: false, success: false });
+    const [state, formAction] = useActionState(
+        type === "create" ? createSubject : updateSubject,
+        { error: false, success: false }
+    );
     const router = useRouter();
 
     useEffect(() => {
@@ -54,6 +54,7 @@ const SubjectForm = ({
                     error={errors?.name}
                 />
             </div>
+            {data?.id && <input type="hidden" name="id" value={data.id} />}
             {state.error && <span className="text-red-500">Something went wrong!</span>}
             <button className="bg-blue-400 text-white p-2 rounded-md">
                 {type === "create" ? "Create" : "Update"}
