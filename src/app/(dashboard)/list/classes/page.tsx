@@ -6,9 +6,9 @@ import { role } from "@/lib/utils";
 import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
-import { Class, Prisma, Teacher } from "@prisma/client";
+import { Class, Prisma, Teacher, Grade } from "@prisma/client";
 
-type ClassList = Class & { supervisor: Teacher }
+type ClassList = Class & { supervisor: Teacher; grade: Grade }
 
 const columns = [
     {
@@ -36,20 +36,20 @@ const columns = [
     }] : []),
 ];
 
-const renderRow = (item: ClassList) => (
+const renderRow = (item: ClassList, relatedData?: any) => (
     <tr
         key={item.id}
         className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
     >
         <td className="flex items-center gap-4 p-4">{item.name}</td>
         <td className="hidden md:table-cell">{item.capacity}</td>
-        <td className="hidden md:table-cell">{item.name[0]}</td>
+        <td className="hidden md:table-cell">{item.grade.level}</td>
         <td className="hidden md:table-cell">{item.supervisor.name + " " + item.supervisor.surname}</td>
         <td>
             <div className="flex items-center gap-2">
                 {role === "admin" && (
                     <>
-                        <FormModal table="class" type="update" data={item} />
+                        <FormModal table="class" type="update" data={item} relatedData={relatedData} />
                         <FormModal table="class" type="delete" id={item.id} />
                     </>
                 )}
@@ -83,16 +83,30 @@ const ClassListPage = async ({ searchParams }: { searchParams: Promise<{ [key: s
     }
 
 
-    const [data, count] = await prisma.$transaction([
+    const [data, count, teachers, grades] = await prisma.$transaction([
         prisma.class.findMany({
             where: query,
             include: {
                 supervisor: true,
+                grade: true,
             },
             take: ITEMS_PER_PAGE,
             skip: (p - 1) * ITEMS_PER_PAGE,
         }),
         prisma.class.count({ where: query }),
+        prisma.teacher.findMany({
+            select: {
+                id: true,
+                name: true,
+                surname: true,
+            },
+        }),
+        prisma.grade.findMany({
+            select: {
+                id: true,
+                level: true,
+            },
+        }),
     ]);
 
 
@@ -110,12 +124,12 @@ const ClassListPage = async ({ searchParams }: { searchParams: Promise<{ [key: s
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
-                        {role === "admin" && <FormModal table="class" type="create" />}
+                        {role === "admin" && <FormModal table="class" type="create" relatedData={{ teachers, grades }} />}
                     </div>
                 </div>
             </div>
             {/* LIST */}
-            <Table columns={columns} renderRow={renderRow} data={data} />
+            <Table columns={columns} renderRow={renderRow} data={data} relatedData={{ teachers, grades }} />
             {/* PAGINATION */}
             <Pagination page={p} count={count} />
         </div>
