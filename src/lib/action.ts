@@ -14,12 +14,18 @@ export const createSubject = async (
     formData: FormData
 ) => {
     try {
-        const data = Object.fromEntries(formData.entries());
+        const data = {
+            name: formData.get("name"),
+            teachers: formData.getAll("teachers"),
+        };
         const validatedData = subjectSchema.parse(data);
 
         await prisma.subject.create({
             data: {
                 name: validatedData.name,
+                teachers: {
+                    connect: validatedData.teachers.map((teacherId) => ({ id: teacherId })),
+                },
             },
         });
 
@@ -36,13 +42,20 @@ export const updateSubject = async (
     formData: FormData
 ) => {
     try {
-        const data = Object.fromEntries(formData.entries());
+        const data = {
+            id: formData.get("id"),
+            name: formData.get("name"),
+            teachers: formData.getAll("teachers"),
+        };
         const validatedData = subjectSchema.parse(data);
 
         await prisma.subject.update({
             where: { id: validatedData.id },
             data: {
                 name: validatedData.name,
+                teachers: {
+                    set: validatedData.teachers.map((teacherId) => ({ id: teacherId })),
+                },
             },
         });
         // revalidatePath("/list/subjects");
