@@ -6,17 +6,13 @@ import InputField from "../InputField";
 import {
     classSchema,
     ClassSchema,
-    subjectSchema,
-    SubjectSchema,
 } from "@/lib/formValidationSchemas";
 import {
     createClass,
-    createSubject,
     updateClass,
-    updateSubject,
 } from "@/lib/action";
-import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useActionState, useEffect } from "react";
+import { useActionState, useTransition } from "react";
+import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
@@ -33,9 +29,13 @@ const ClassForm = ({
 }) => {
     const {
         register,
+        handleSubmit,
         formState: { errors },
-    } = useForm<ClassSchema>();
+    } = useForm<ClassSchema>({
+        resolver: zodResolver(classSchema) as any,
+    });
 
+    // AFTER REACT 19 IT'LL BE USEACTIONSTATE
 
     const [state, formAction] = useActionState(
         type === "create" ? createClass : updateClass,
@@ -45,6 +45,14 @@ const ClassForm = ({
         }
     );
 
+    const [isPending, startTransition] = useTransition();
+
+    const onSubmit = handleSubmit((data) => {
+        console.log(data);
+        startTransition(() => {
+            formAction(data);
+        });
+    });
 
     const router = useRouter();
 
@@ -56,10 +64,10 @@ const ClassForm = ({
         }
     }, [state, router, type, setOpen]);
 
-    const { teachers, grades } = relatedData || { teachers: [], grades: [] };
+    const { teachers = [], grades = [] } = relatedData || {};
 
     return (
-        <form className="flex flex-col gap-8" action={formAction}>
+        <form className="flex flex-col gap-8" onSubmit={onSubmit}>
             <h1 className="text-xl font-semibold">
                 {type === "create" ? "Create a new class" : "Update the class"}
             </h1>
@@ -120,9 +128,11 @@ const ClassForm = ({
                         {...register("gradeId")}
                         defaultValue={data?.gradeId}
                     >
-                        {!data && <option value="">Select a grade</option>}
                         {grades.map((grade: { id: number; level: number }) => (
-                            <option key={grade.id} value={grade.id}>
+                            <option
+                                value={grade.id}
+                                key={grade.id}
+                            >
                                 {grade.level}
                             </option>
                         ))}

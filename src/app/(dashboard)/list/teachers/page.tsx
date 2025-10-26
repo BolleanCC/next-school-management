@@ -6,6 +6,7 @@ import Link from "next/link";
 import { role } from "@/lib/data";
 import { teachersData } from "@/lib/data";
 import FormModal from "@/components/FormModal";
+import FormContainer from "@/components/FormContainer";
 import { Class, Subject, Teacher } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
@@ -81,10 +82,10 @@ const renderRow = (item: TeacherList) => (
                     // <button className="w-7 h-7 flex items-center justify-center rounded-full bg-purple">
                     //     <Image src="/delete.png" alt="" width={16} height={16} />
                     // </button>
-                    <FormModal
+                    <FormContainer
                         table="teacher"
                         type="delete"
-                        data={item}
+                        data={item.id}
                     />
                 )}
             </div>
@@ -153,7 +154,7 @@ const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                         <Image src="/plus.png" alt="add" width={14} height={14} />
                     </button> */}
                     {role === "admin" && (
-                        <FormModal
+                        <FormContainer
                             table="teacher"
                             type="create"
                         />
