@@ -35,8 +35,13 @@ const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: st
             className: "hidden md:table-cell",
         },
         {
-            header: "Date",
-            accessor: "date",
+            header: "Start Time",
+            accessor: "startTime",
+            className: "hidden md:table-cell",
+        },
+        {
+            header: "End Time",
+            accessor: "endTime",
             className: "hidden md:table-cell",
         },
         ...(role === "admin" || role === "teacher" ? [{
@@ -53,7 +58,24 @@ const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: st
             <td className="flex items-center gap-4 p-4">{item.lesson.subject.name}</td>
             <td>{item.lesson.class.name}</td>
             <td className="hidden md:table-cell">{item.lesson.teacher.name + " " + item.lesson.teacher.surname}</td>
-            <td className="hidden md:table-cell">{new Intl.DateTimeFormat('en-US').format(new Date(item.startTime))}</td>
+            <td className="hidden md:table-cell">
+                {new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }).format(new Date(item.startTime))}
+            </td>
+            <td className="hidden md:table-cell">
+                {new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }).format(new Date(item.endTime))}
+            </td>
             <td>
                 <div className="flex items-center gap-2">
                     {(role === "admin" || role === "teacher") && (

@@ -32,7 +32,7 @@ const ExamForm = ({
         handleSubmit,
         formState: { errors },
     } = useForm<ExamSchema>({
-        resolver: zodResolver(examSchema),
+        resolver: zodResolver(examSchema) as any,
     });
 
     const [state, formAction] = useActionState(
@@ -46,6 +46,7 @@ const ExamForm = ({
     const [isPending, startTransition] = useTransition();
 
     const onSubmit = handleSubmit((data) => {
+        console.log(data);
         startTransition(() => {
             formAction(data);
         });
@@ -77,6 +78,22 @@ const ExamForm = ({
                     register={register}
                     error={errors?.title}
                 />
+                <InputField
+                    label="Start Date"
+                    name="startTime"
+                    defaultValue={data?.startTime?.toISOString().slice(0, 16)}
+                    register={register}
+                    error={errors?.startTime}
+                    type="datetime-local"
+                />
+                <InputField
+                    label="End Date"
+                    name="endTime"
+                    defaultValue={data?.endTime?.toISOString().slice(0, 16)}
+                    register={register}
+                    error={errors?.endTime}
+                    type="datetime-local"
+                />
                 {data && (
                     <InputField
                         label="Id"
@@ -87,22 +104,6 @@ const ExamForm = ({
                         hidden
                     />
                 )}
-                <InputField
-                    label="Start Time"
-                    name="startTime"
-                    defaultValue={data?.startTime?.toISOString().slice(0, 16)}
-                    register={register}
-                    error={errors.startTime}
-                    type="datetime-local"
-                />
-                <InputField
-                    label="End Time"
-                    name="endTime"
-                    defaultValue={data?.endTime?.toISOString().slice(0, 16)}
-                    register={register}
-                    error={errors.endTime}
-                    type="datetime-local"
-                />
                 <div className="flex flex-col gap-2 w-full md:w-1/4">
                     <label className="text-xs text-gray-500">Lesson</label>
                     <select
@@ -138,4 +139,3 @@ const ExamForm = ({
 };
 
 export default ExamForm;
-
