@@ -6,58 +6,62 @@ import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Announcement, Class, Prisma } from "@prisma/client";
-import { currentUserId, role } from "@/lib/utils";
+import { getCurrentUserId, getRole } from "@/lib/data";
 
 
 
 
 type AnnouncementList = Announcement & { class: Class | null }
 
-const columns = [
-    {
-        header: "Title",
-        accessor: "title",
-    },
-    {
-        header: "Class",
-        accessor: "class",
-    },
-    {
-        header: "Date",
-        accessor: "date",
-        className: "hidden md:table-cell",
-    },
-    ...(role === "admin" ? [{
-        header: "Actions",
-        accessor: "action",
-    }] : []),
-];
-
-const renderRow = (item: AnnouncementList) => (
-    <tr
-        key={item.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
-    >
-        <td className="flex items-center gap-4 p-4">{item.title}</td>
-        <td>{item.class?.name || "-"}</td>
-        <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.date)}</td>
-        <td>
-            <div className="flex items-center gap-2">
-                {role === "admin" && (
-                    <>
-                        <FormModal table="announcement" type="update" data={item} />
-                        <FormModal table="announcement" type="delete" id={item.id} />
-                    </>
-                )}
-            </div>
-        </td>
-    </tr>
-);
 const AnnouncementListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {
     const resolvedSearchParams = await searchParams;
     const { page, ...queryParams } = resolvedSearchParams;
 
     const p = page ? parseInt(page) : 1;
+
+    const role = await getRole();
+    const currentUserId = await getCurrentUserId();
+
+    const columns = [
+        {
+            header: "Title",
+            accessor: "title",
+        },
+        {
+            header: "Class",
+            accessor: "class",
+        },
+        {
+            header: "Date",
+            accessor: "date",
+            className: "hidden md:table-cell",
+        },
+        ...(role === "admin" ? [{
+            header: "Actions",
+            accessor: "action",
+        }] : []),
+    ];
+
+    const renderRow = (item: AnnouncementList) => (
+        <tr
+            key={item.id}
+            className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
+        >
+            <td className="flex items-center gap-4 p-4">{item.title}</td>
+            <td>{item.class?.name || "-"}</td>
+            <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.date)}</td>
+            <td>
+                <div className="flex items-center gap-2">
+                    {role === "admin" && (
+                        <>
+                            <FormModal table="announcement" type="update" data={item} />
+                            <FormModal table="announcement" type="delete" id={item.id} />
+                        </>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
 
     const query: Prisma.AnnouncementWhereInput = {}
 
