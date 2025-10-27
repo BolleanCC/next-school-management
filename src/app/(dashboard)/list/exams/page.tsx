@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Class, Exam, Prisma, Subject, Teacher } from "@prisma/client";
+import FormContainer from "@/components/FormContainer";
 
 type ExamList = Exam & { lesson: { subject: Subject, class: Class, teacher: Teacher } }
 
@@ -57,8 +58,8 @@ const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: st
                 <div className="flex items-center gap-2">
                     {(role === "admin" || role === "teacher") && (
                         <>
-                            <FormModal table="exam" type="update" data={item} />
-                            <FormModal table="exam" type="delete" id={item.id} />
+                            <FormContainer table="exam" type="update" data={item} />
+                            <FormContainer table="exam" type="delete" id={item.id} />
                         </>
                     )}
                 </div>
@@ -131,7 +132,7 @@ const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: st
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
-                        {(role === "admin" || role === "teacher") && (<FormModal table="exam" type="create" />)}
+                        {(role === "admin" || role === "teacher") && (<FormContainer table="exam" type="create" />)}
                     </div>
                 </div>
             </div>
