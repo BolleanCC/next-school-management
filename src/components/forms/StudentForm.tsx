@@ -115,7 +115,7 @@ const StudentForm = ({
                     return (
                         <div
                             className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
-                            onClick={() => open()}
+                            onClick={() => open && open()}
                         >
                             <Image src="/upload.png" alt="" width={28} height={28} />
                             <span>Upload a photo</span>
