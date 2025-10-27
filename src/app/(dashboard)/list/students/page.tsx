@@ -8,6 +8,7 @@ import FormModal from "@/components/FormModal";
 import prisma from "@/lib/prisma";
 import { Class, Prisma, Student } from "@prisma/client";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
+import FormContainer from "@/components/FormContainer";
 
 type StudentList = Student & { class: Class }
 const columns = [
@@ -129,7 +130,7 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                     <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                         <Image src="/sort.png" alt="add" width={14} height={14} />
                     </button>
-                    {role === "admin" && <FormModal table="student" type="create" />}
+                    {role === "admin" && <FormContainer table="student" type="create" />}
                 </div>
             </div>
         </div>
