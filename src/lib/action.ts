@@ -194,14 +194,26 @@ export const updateTeacher = async (
         return { success: false, error: true };
     }
     try {
-        const clerk = await clerkClient();
-        const user = await clerk.users.updateUser(data.id, {
-            username: data.username,
-            ...(data.password !== "" && { password: data.password }),
-            firstName: data.name,
-            lastName: data.surname,
-        });
+        // Try to update Clerk user if it exists
+        // This will fail for seeded data with IDs like "teacher1", "teacher2", etc.
+        try {
+            const clerk = await clerkClient();
+            await clerk.users.updateUser(data.id, {
+                username: data.username,
+                ...(data.password !== "" && { password: data.password }),
+                firstName: data.name,
+                lastName: data.surname,
+            });
+        } catch (clerkError: any) {
+            // If the user doesn't exist in Clerk (404), that's okay - continue with DB update
+            // This handles seeded data that doesn't have corresponding Clerk users
+            if (clerkError?.status !== 404) {
+                // If it's a different error, log it but continue
+                console.warn("Clerk update failed (non-404):", clerkError?.message);
+            }
+        }
 
+        // Update the database (this is the source of truth)
         await prisma.teacher.update({
             where: {
                 id: data.id,
@@ -239,9 +251,18 @@ export const deleteTeacher = async (
 ) => {
     const id = data.get("id") as string;
     try {
-        const clerk = await clerkClient();
-        await clerk.users.deleteUser(id);
+        // Try to delete Clerk user if it exists
+        try {
+            const clerk = await clerkClient();
+            await clerk.users.deleteUser(id);
+        } catch (clerkError: any) {
+            // If the user doesn't exist in Clerk (404), that's okay - continue with DB delete
+            if (clerkError?.status !== 404) {
+                console.warn("Clerk delete failed (non-404):", clerkError?.message);
+            }
+        }
 
+        // Delete from database
         await prisma.teacher.delete({
             where: {
                 id: id,
@@ -322,14 +343,23 @@ export const updateStudent = async (
         return { success: false, error: true };
     }
     try {
-        const clerk = await clerkClient();
-        const user = await clerk.users.updateUser(data.id, {
-            username: data.username,
-            ...(data.password !== "" && { password: data.password }),
-            firstName: data.name,
-            lastName: data.surname,
-        });
+        // Try to update Clerk user if it exists
+        try {
+            const clerk = await clerkClient();
+            await clerk.users.updateUser(data.id, {
+                username: data.username,
+                ...(data.password !== "" && { password: data.password }),
+                firstName: data.name,
+                lastName: data.surname,
+            });
+        } catch (clerkError: any) {
+            // If the user doesn't exist in Clerk (404), that's okay - continue with DB update
+            if (clerkError?.status !== 404) {
+                console.warn("Clerk update failed (non-404):", clerkError?.message);
+            }
+        }
 
+        // Update the database
         await prisma.student.update({
             where: {
                 id: data.id,
@@ -365,9 +395,18 @@ export const deleteStudent = async (
 ) => {
     const id = data.get("id") as string;
     try {
-        const clerk = await clerkClient();
-        await clerk.users.deleteUser(id);
+        // Try to delete Clerk user if it exists
+        try {
+            const clerk = await clerkClient();
+            await clerk.users.deleteUser(id);
+        } catch (clerkError: any) {
+            // If the user doesn't exist in Clerk (404), that's okay - continue with DB delete
+            if (clerkError?.status !== 404) {
+                console.warn("Clerk delete failed (non-404):", clerkError?.message);
+            }
+        }
 
+        // Delete from database
         await prisma.student.delete({
             where: {
                 id: id,
