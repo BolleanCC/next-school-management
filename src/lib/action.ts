@@ -2,6 +2,7 @@
 
 import {
     ClassSchema,
+    EventSchema,
     ExamSchema,
     ResultSchema,
     StudentSchema,
@@ -587,6 +588,76 @@ export const deleteResult = async (
         });
 
         // revalidatePath("/list/results");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+export const createEvent = async (
+    currentState: CurrentState,
+    data: EventSchema
+) => {
+    try {
+        await prisma.event.create({
+            data: {
+                title: data.title,
+                description: data.description,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                ...(data.classId && { classId: data.classId }),
+            },
+        });
+
+        // revalidatePath("/list/events");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+export const updateEvent = async (
+    currentState: CurrentState,
+    data: EventSchema
+) => {
+    try {
+        await prisma.event.update({
+            where: {
+                id: data.id,
+            },
+            data: {
+                title: data.title,
+                description: data.description,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                ...(data.classId && { classId: data.classId }),
+            },
+        });
+
+        // revalidatePath("/list/events");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+export const deleteEvent = async (
+    currentState: CurrentState,
+    data: FormData
+) => {
+    const id = data.get("id") as string;
+
+    try {
+        await prisma.event.delete({
+            where: {
+                id: parseInt(id),
+            },
+        });
+
+        // revalidatePath("/list/events");
         return { success: true, error: false };
     } catch (err) {
         console.log(err);
