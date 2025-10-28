@@ -7,17 +7,44 @@ const matchers = Object.keys(routeAccessMap).map((route) => ({
     allowedRoles: routeAccessMap[route],
 }));
 
+// Define protected routes that require authentication
+const isProtectedRoute = createRouteMatcher([
+    '/admin(.*)',
+    '/teacher(.*)',
+    '/student(.*)',
+    '/parent(.*)',
+    '/list(.*)',
+]);
+
+// Define public routes
+const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/']);
+
 console.log(matchers);
 
 export default clerkMiddleware(async (auth, req) => {
-    const { sessionClaims } = await auth();
+    const { userId, sessionClaims } = await auth();
     const role = (sessionClaims?.metadata as { role?: string })?.role;
 
+    // If user is not signed in and trying to access protected route, redirect to sign-in
+    if (!userId && isProtectedRoute(req)) {
+        const signInUrl = new URL('/sign-in', req.url);
+        signInUrl.searchParams.set('redirect_url', req.url);
+        return NextResponse.redirect(signInUrl);
+    }
+
+    // If user is signed in and on sign-in page, redirect to their role page
+    if (userId && role && req.nextUrl.pathname === '/sign-in') {
+        return NextResponse.redirect(new URL(`/${role}`, req.url));
+    }
+
+    // Check role-based access
     for (const { matcher, allowedRoles } of matchers) {
         if (matcher(req) && (!role || !allowedRoles.includes(role))) {
             return NextResponse.redirect(new URL(`/${role || 'sign-in'}`, req.url));
         }
     }
+
+    return NextResponse.next();
 });
 
 export const config = {

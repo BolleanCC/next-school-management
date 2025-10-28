@@ -13,12 +13,15 @@ const LoginPage = () => {
     const router = useRouter();
 
     useEffect(() => {
-        const role = user?.publicMetadata.role;
+        if (isLoaded && isSignedIn) {
+            const role = user?.publicMetadata.role;
 
-        if (role) {
-            router.push(`/${role}`);
+            if (role) {
+                // Force a hard navigation to ensure state is cleared
+                window.location.href = `/${role}`;
+            }
         }
-    }, [user, router]);
+    }, [isLoaded, isSignedIn, user]);
 
     return (
         <div className="h-screen flex items-center justify-center bg-skyLight">
