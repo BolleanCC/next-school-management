@@ -29,7 +29,7 @@ const Navbar = async () => {
                     <span className="text-[10px] text-gray-500 text-right">{user?.publicMetadata.role as string}</span>
                 </div>
                 {/* <Image src="/avatar.png" alt="" width={36} height={36} className="rounded-full" /> */}
-                <UserButton />
+                <UserButton afterSignOutUrl="/sign-in" />
             </div>
         </div>
     )
