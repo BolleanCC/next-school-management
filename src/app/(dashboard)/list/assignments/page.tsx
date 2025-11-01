@@ -25,6 +25,10 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
             accessor: "name",
         },
         {
+            header: "Assignment Title",
+            accessor: "title",
+        },
+        {
             header: "Class",
             accessor: "class",
         },
@@ -50,6 +54,9 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
             className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
         >
             <td className="flex items-center gap-4 p-4">{item.lesson.subject.name}</td>
+            <td className="p-4">
+                <span className="font-medium text-gray-800">{item.title}</span>
+            </td>
             <td>
                 {item.lesson.class ? (
                     item.lesson.class.name
