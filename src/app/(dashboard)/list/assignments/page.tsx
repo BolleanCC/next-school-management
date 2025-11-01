@@ -8,7 +8,7 @@ import Image from "next/image";
 import { Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
 import { getCurrentUserId, getRole } from "@/lib/data";
 
-type AssignmentList = Assignment & { lesson: { subject: Subject, class: Class, teacher: Teacher } }
+type AssignmentList = Assignment & { lesson: { subject: Subject, class: Class | null, teacher: Teacher | null } }
 
 const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {
     const resolvedSearchParams = await searchParams;
@@ -50,8 +50,20 @@ const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [k
             className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight"
         >
             <td className="flex items-center gap-4 p-4">{item.lesson.subject.name}</td>
-            <td>{item.lesson.class.name}</td>
-            <td className="hidden md:table-cell">{item.lesson.teacher.name + " " + item.lesson.teacher.surname}</td>
+            <td>
+                {item.lesson.class ? (
+                    item.lesson.class.name
+                ) : (
+                    <span className="text-amber-600 font-medium italic">⚠️ No Class</span>
+                )}
+            </td>
+            <td className="hidden md:table-cell">
+                {item.lesson.teacher ? (
+                    item.lesson.teacher.name + " " + item.lesson.teacher.surname
+                ) : (
+                    <span className="text-amber-600 font-medium italic">⚠️ Awaiting Assignment</span>
+                )}
+            </td>
             <td className="hidden md:table-cell">{new Intl.DateTimeFormat('en-US').format(new Date(item.dueDate))}</td>
             <td>
                 <div className="flex items-center gap-2">

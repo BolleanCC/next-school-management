@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
 
+type ActionState = { success: boolean; error: boolean; message?: string };
+
 const StudentForm = ({
     type,
     data,
@@ -39,7 +41,7 @@ const StudentForm = ({
 
     const [img, setImg] = useState<any>();
 
-    const [state, formAction] = useActionState(
+    const [state, formAction] = useActionState<ActionState, StudentSchema>(
         type === "create" ? createStudent : updateStudent,
         {
             success: false,
@@ -261,7 +263,9 @@ const StudentForm = ({
                 </div>
             </div>
             {state.error && (
-                <span className="text-red-500">Something went wrong!</span>
+                <span className="text-red-500">
+                    {state.message || "Something went wrong!"}
+                </span>
             )}
             <button type="submit" className="bg-blue-400 text-white p-2 rounded-md">
                 {type === "create" ? "Create" : "Update"}

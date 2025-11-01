@@ -8,7 +8,7 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Class, Prisma, Teacher, Grade } from "@prisma/client";
 
-type ClassList = Class & { supervisor: Teacher; grade: Grade }
+type ClassList = Class & { supervisor: Teacher | null; grade: Grade }
 
 const ClassListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {
     const resolvedSearchParams = await searchParams;
@@ -52,7 +52,15 @@ const ClassListPage = async ({ searchParams }: { searchParams: Promise<{ [key: s
             <td className="flex items-center gap-4 p-4">{item.name}</td>
             <td className="hidden md:table-cell">{item.capacity}</td>
             <td className="hidden md:table-cell">{item.grade.level}</td>
-            <td className="hidden md:table-cell">{item.supervisor.name + " " + item.supervisor.surname}</td>
+            <td className="hidden md:table-cell">
+                {item.supervisor ? (
+                    item.supervisor.name + " " + item.supervisor.surname
+                ) : (
+                    <span className="text-amber-600 font-medium italic">
+                        ⚠️ Awaiting Assignment
+                    </span>
+                )}
+            </td>
             <td>
                 <div className="flex items-center gap-2">
                     {role === "admin" && (

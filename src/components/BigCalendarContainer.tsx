@@ -13,6 +13,7 @@ const BigCalendarContainer = async ({ type, id }: { type: "teacherId" | "classId
         title: lesson.name,
         start: lesson.startTime,
         end: lesson.endTime,
+        day: lesson.day, // Include the day enum
     }));
 
     const schedule = adjustScheduleToCurrentWeek(data);

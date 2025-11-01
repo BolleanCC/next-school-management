@@ -72,7 +72,24 @@ const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                     className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
                 />
                 <div className="flex flex-col">
-                    <h3 className="font-semibold">{item.name}</h3>
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{item.name}</h3>
+                        {item.clerkUserId ? (
+                            <span
+                                className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium"
+                                title="Linked to Clerk account"
+                            >
+                                ✓ Clerk
+                            </span>
+                        ) : (
+                            <span
+                                className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium"
+                                title="No Clerk account linked"
+                            >
+                                ⚠ No Clerk
+                            </span>
+                        )}
+                    </div>
                     <p className="text-xs text-gray-500">{item?.email}</p>
                 </div>
             </td>
@@ -110,7 +127,11 @@ const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key
             if (value !== undefined) {
                 switch (key) {
                     case "classId":
-                        query.lessons = { some: { classId: parseInt(value) } }
+                        // Include both teachers who teach lessons in this class AND the class supervisor
+                        query.OR = [
+                            { lessons: { some: { classId: parseInt(value) } } },
+                            { classes: { some: { id: parseInt(value) } } }
+                        ];
                         break;
                     case "search":
                         query.name = { contains: value, mode: "insensitive" }
@@ -139,6 +160,10 @@ const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key
     ]);
 
     console.log('Found teachers:', data.length);
+    // Debug: Log clerkUserId for each teacher
+    data.forEach(teacher => {
+        console.log(`Teacher: ${teacher.name} ${teacher.surname}, clerkUserId: ${teacher.clerkUserId || 'NULL'}`);
+    });
 
 
     return <div className="p-4 rounded-md bg-white flex-1 mt-0">

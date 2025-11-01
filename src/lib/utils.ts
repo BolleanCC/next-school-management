@@ -20,14 +20,21 @@ const getLatestMonday = (): Date => {
 };
 
 export const adjustScheduleToCurrentWeek = (
-    lessons: { title: string; start: Date; end: Date }[]
+    lessons: { title: string; start: Date; end: Date; day: string }[]
 ): { title: string; start: Date; end: Date }[] => {
     const latestMonday = getLatestMonday();
 
     return lessons.map((lesson) => {
-        const lessonDayOfWeek = lesson.start.getDay();
+        // Map Day enum to days from Monday (0 = Monday, 1 = Tuesday, etc.)
+        const dayMap: { [key: string]: number } = {
+            MONDAY: 0,
+            TUESDAY: 1,
+            WEDNESDAY: 2,
+            THURSDAY: 3,
+            FRIDAY: 4,
+        };
 
-        const daysFromMonday = lessonDayOfWeek === 0 ? 6 : lessonDayOfWeek - 1;
+        const daysFromMonday = dayMap[lesson.day] ?? 0;
 
         const adjustedStartDate = new Date(latestMonday);
 

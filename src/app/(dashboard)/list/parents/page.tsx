@@ -8,6 +8,7 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Parent, Prisma, Student } from "@prisma/client";
 import FormModal from "@/components/FormModal";
+import FormContainer from "@/components/FormContainer";
 
 type ParentList = Parent & { students: Student[] }
 
@@ -118,7 +119,7 @@ const ParentListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
                             <Image src="/sort.png" alt="" width={14} height={14} />
                         </button>
                         {role === "admin" && (
-                            <FormModal table="parent" type="create" />
+                            <FormContainer table="parent" type="create" />
                         )}
                     </div>
                 </div>
