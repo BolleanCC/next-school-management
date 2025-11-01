@@ -26,6 +26,10 @@ const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: st
             accessor: "name",
         },
         {
+            header: "Exam Name",
+            accessor: "examName",
+        },
+        {
             header: "Class",
             accessor: "class",
         },
@@ -56,6 +60,9 @@ const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: st
             className="border-b border-gray-200 even:bg-slate-50 text-sm hover:purpleLight"
         >
             <td className="flex items-center gap-4 p-4">{item.lesson.subject.name}</td>
+            <td className="p-4">
+                <span className="font-medium text-gray-800">{item.title}</span>
+            </td>
             <td>
                 {item.lesson.class ? (
                     item.lesson.class.name
