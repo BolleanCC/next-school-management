@@ -32,8 +32,8 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(signInUrl);
     }
 
-    // If user is signed in and on sign-in page, redirect to their role page
-    if (userId && role && req.nextUrl.pathname === '/sign-in') {
+    // If user is signed in and on sign-in page or root, redirect to their role page
+    if (userId && role && (req.nextUrl.pathname === '/sign-in' || req.nextUrl.pathname === '/')) {
         return NextResponse.redirect(new URL(`/${role}`, req.url));
     }
 

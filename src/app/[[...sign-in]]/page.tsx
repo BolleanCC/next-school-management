@@ -2,26 +2,9 @@
 
 import * as Clerk from "@clerk/elements/common";
 import * as SignIn from "@clerk/elements/sign-in";
-import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 const LoginPage = () => {
-    const { isLoaded, isSignedIn, user } = useUser();
-
-    const router = useRouter();
-
-    useEffect(() => {
-        if (isLoaded && isSignedIn) {
-            const role = user?.publicMetadata.role;
-
-            if (role) {
-                // Force a hard navigation to ensure state is cleared
-                window.location.href = `/${role}`;
-            }
-        }
-    }, [isLoaded, isSignedIn, user]);
 
     return (
         <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">

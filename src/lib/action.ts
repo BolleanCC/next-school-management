@@ -151,9 +151,12 @@ export const createTeacher = async (
             return { success: false, error: true };
         }
 
+        // Sanitize username to ensure it only contains valid characters
+        const sanitizedUsername = sanitizeUsername(data.username);
+
         const clerk = await clerkClient();
         const user = await clerk.users.createUser({
-            username: data.username,
+            username: sanitizedUsername,
             password: data.password,
             firstName: data.name,
             lastName: data.surname,
@@ -164,7 +167,7 @@ export const createTeacher = async (
         await prisma.teacher.create({
             data: {
                 id: user.id,
-                username: data.username,
+                username: sanitizedUsername,
                 name: data.name,
                 surname: data.surname,
                 email: data.email || null,
@@ -282,6 +285,12 @@ export const deleteTeacher = async (
     }
 };
 
+// Helper function to sanitize username for Clerk
+const sanitizeUsername = (username: string): string => {
+    // Remove all characters that are not letters, numbers, hyphens, or underscores
+    return username.replace(/[^a-zA-Z0-9_-]/g, '_');
+};
+
 export const createStudent = async (
     currentState: CurrentState,
     data: StudentSchema
@@ -302,9 +311,12 @@ export const createStudent = async (
             return { success: false, error: true };
         }
 
+        // Sanitize username to ensure it only contains valid characters
+        const sanitizedUsername = sanitizeUsername(data.username);
+
         const clerk = await clerkClient();
         const user = await clerk.users.createUser({
-            username: data.username,
+            username: sanitizedUsername,
             password: data.password,
             firstName: data.name,
             lastName: data.surname,
@@ -315,7 +327,7 @@ export const createStudent = async (
         await prisma.student.create({
             data: {
                 id: user.id,
-                username: data.username,
+                username: sanitizedUsername,
                 name: data.name,
                 surname: data.surname,
                 email: data.email || null,
