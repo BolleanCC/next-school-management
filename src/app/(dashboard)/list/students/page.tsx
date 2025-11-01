@@ -10,7 +10,7 @@ import { Class, Prisma, Student } from "@prisma/client";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import FormContainer from "@/components/FormContainer";
 
-type StudentList = Student & { class: Class }
+type StudentList = Student & { class: Class | null }
 const columns = [
     {
         header: "Info",
@@ -56,11 +56,15 @@ const renderRow = (item: StudentList) => (
             />
             <div className="flex flex-col">
                 <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-xs text-gray-500">{item.class.name}</p>
+                <p className="text-xs text-gray-500">
+                    {item.class ? item.class.name : "⚠️ No Class"}
+                </p>
             </div>
         </td>
         <td className="hidden md:table-cell p-4">{item.username}</td>
-        <td className="hidden md:table-cell p-4">{item.class.name[0]}</td>
+        <td className="hidden md:table-cell p-4">
+            {item.class ? item.class.name[0] : "-"}
+        </td>
         <td className="hidden lg:table-cell p-4">{item.phone}</td>
         <td className="hidden lg:table-cell p-4">{item.address}</td>
         <td className="p-4">

@@ -8,7 +8,7 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Class, Lesson, Prisma, Subject, Teacher } from "@prisma/client";
 
-type LessonList = Lesson & { subject: Subject, teacher: Teacher, class: Class }
+type LessonList = Lesson & { subject: Subject, teacher: Teacher | null, class: Class | null }
 
 const LessonListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {
     const resolvedSearchParams = await searchParams;
@@ -44,8 +44,24 @@ const LessonListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
             className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
         >
             <td className="flex items-center gap-4 p-4">{item.subject.name}</td>
-            <td>{item.class.name}</td>
-            <td className="hidden md:table-cell">{item.teacher.name + " " + item.teacher.surname}</td>
+            <td>
+                {item.class ? (
+                    item.class.name
+                ) : (
+                    <span className="text-amber-600 font-medium italic">
+                        ⚠️ No Class
+                    </span>
+                )}
+            </td>
+            <td className="hidden md:table-cell">
+                {item.teacher ? (
+                    item.teacher.name + " " + item.teacher.surname
+                ) : (
+                    <span className="text-amber-600 font-medium italic">
+                        ⚠️ Awaiting Assignment
+                    </span>
+                )}
+            </td>
             <td>
                 <div className="flex items-center gap-2">
                     {role === "admin" && (
@@ -75,6 +91,7 @@ const LessonListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
                         query.OR = [
                             { subject: { name: { contains: value, mode: "insensitive" } } },
                             { teacher: { name: { contains: value, mode: "insensitive" } } },
+                            { class: { name: { contains: value, mode: "insensitive" } } },
                         ]
                         break;
                     default:

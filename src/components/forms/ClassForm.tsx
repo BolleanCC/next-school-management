@@ -102,8 +102,11 @@ const ClassForm = ({
                     <select
                         className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
                         {...register("supervisorId")}
-                        defaultValue={data?.supervisorId}
+                        defaultValue={data?.supervisorId || ""}
                     >
+                        <option value="" className="text-amber-600 italic">
+                            ⚠️ Unassigned - Awaiting Assignment
+                        </option>
                         {teachers.map(
                             (teacher: { id: string; name: string; surname: string }) => (
                                 <option

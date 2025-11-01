@@ -6,6 +6,7 @@ import {
     EventSchema,
     ExamSchema,
     LessonSchema,
+    ParentSchema,
     ResultSchema,
     StudentSchema,
     SubjectSchema,
@@ -15,7 +16,7 @@ import prisma from "./prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-type CurrentState = { success: boolean; error: boolean };
+type CurrentState = { success: boolean; error: boolean; message?: string };
 
 export const createSubject = async (
     currentState: CurrentState,
@@ -90,7 +91,10 @@ export const createClass = async (
 ) => {
     try {
         await prisma.class.create({
-            data,
+            data: {
+                ...data,
+                supervisorId: data.supervisorId && data.supervisorId.trim() !== "" ? data.supervisorId : null,
+            },
         });
 
         // revalidatePath("/list/class");
@@ -110,26 +114,9 @@ export const updateClass = async (
             where: {
                 id: data.id,
             },
-            data,
-        });
-
-        // revalidatePath("/list/class");
-        return { success: true, error: false };
-    } catch (err) {
-        console.log(err);
-        return { success: false, error: true };
-    }
-};
-
-export const deleteClass = async (
-    currentState: CurrentState,
-    data: FormData
-) => {
-    const id = data.get("id") as string;
-    try {
-        await prisma.class.delete({
-            where: {
-                id: parseInt(id),
+            data: {
+                ...data,
+                supervisorId: data.supervisorId && data.supervisorId.trim() !== "" ? data.supervisorId : null,
             },
         });
 
@@ -141,6 +128,96 @@ export const deleteClass = async (
     }
 };
 
+/**
+ * Deletes a class from the database.
+ * 
+ * When a class is deleted:
+ * - Students' classId is automatically set to NULL (via onDelete: SetNull)
+ * - Lessons' classId is automatically set to NULL (via onDelete: SetNull)
+ * - Events and announcements are preserved with NULL classId
+ * 
+ * @param currentState - Current form state
+ * @param data - FormData containing the class ID
+ * @returns Success/error state with descriptive message
+ */
+export const deleteClass = async (
+    currentState: CurrentState,
+    data: FormData
+) => {
+    const id = data.get("id") as string;
+
+    // Validate id
+    if (!id || id.trim() === "") {
+        console.error("Invalid class ID provided");
+        return { success: false, error: true, message: "Invalid class ID" };
+    }
+
+    const classId = parseInt(id);
+    if (isNaN(classId)) {
+        console.error("Class ID must be a number");
+        return { success: false, error: true, message: "Invalid class ID format" };
+    }
+
+    try {
+        // Fetch the class first to get info about affected records
+        const classInfo = await prisma.class.findUnique({
+            where: { id: classId },
+            select: {
+                id: true,
+                name: true,
+                _count: {
+                    select: {
+                        students: true,
+                        lessons: true,
+                    },
+                },
+            },
+        });
+
+        if (!classInfo) {
+            console.warn(`Class with id ${classId} not found`);
+            return { success: false, error: true, message: "Class not found or already deleted" };
+        }
+
+        // Delete the class
+        // Students' and lessons' classId will automatically be set to NULL
+        await prisma.class.delete({
+            where: { id: classId },
+        });
+
+        // Build informative message
+        const messages: string[] = [`Class ${classInfo.name} deleted successfully.`];
+
+        if (classInfo._count.students > 0) {
+            messages.push(
+                `${classInfo._count.students} student${classInfo._count.students > 1 ? 's' : ''} now have no assigned class.`
+            );
+        }
+
+        if (classInfo._count.lessons > 0) {
+            messages.push(
+                `${classInfo._count.lessons} lesson${classInfo._count.lessons > 1 ? 's' : ''} now have no assigned class.`
+            );
+        }
+
+        console.info(messages.join(' '));
+
+        // revalidatePath("/list/class");
+        return {
+            success: true,
+            error: false,
+            message: messages.join(' '),
+        };
+    } catch (err: any) {
+        console.error("Error deleting class:", err);
+        return {
+            success: false,
+            error: true,
+            message: err.message || "Failed to delete class",
+        };
+    }
+};
+
 export const createTeacher = async (
     currentState: CurrentState,
     data: TeacherSchema
@@ -148,7 +225,11 @@ export const createTeacher = async (
     try {
         if (!data.password || data.password.length < 8) {
             console.error("Password is required and must be at least 8 characters");
-            return { success: false, error: true };
+            return {
+                success: false,
+                error: true,
+                message: "Password is required and must be at least 8 characters long!"
+            };
         }
 
         // Sanitize username to ensure it only contains valid characters
@@ -177,6 +258,7 @@ export const createTeacher = async (
                 bloodType: data.bloodType,
                 sex: data.sex,
                 birthday: data.birthday,
+                clerkUserId: user.id,
                 subjects: {
                     connect: data.subjects?.map((subjectId: string) => ({
                         id: parseInt(subjectId),
@@ -190,7 +272,33 @@ export const createTeacher = async (
     } catch (err: any) {
         console.error("Error creating teacher:", err);
         console.error("Clerk errors:", err?.errors);
-        return { success: false, error: true };
+
+        // Extract user-friendly error message from Clerk errors
+        if (err?.errors && Array.isArray(err.errors) && err.errors.length > 0) {
+            const clerkError = err.errors[0];
+            if (clerkError.message) {
+                return {
+                    success: false,
+                    error: true,
+                    message: clerkError.message
+                };
+            }
+        }
+
+        // Fallback error messages
+        if (err?.message) {
+            return {
+                success: false,
+                error: true,
+                message: err.message
+            };
+        }
+
+        return {
+            success: false,
+            error: true,
+            message: "Failed to create teacher. Please check your input and try again."
+        };
     }
 };
 
@@ -253,35 +361,226 @@ export const updateTeacher = async (
     }
 };
 
+/**
+ * Deletes a teacher from the database and optionally from Clerk.
+ * 
+ * This function is idempotent - calling it multiple times with the same ID
+ * will return "Teacher not found" after the first successful deletion.
+ * 
+ * Behavior:
+ * - If teacher has clerkUserId: deletes from both DB and Clerk
+ * - If teacher has no clerkUserId (null): deletes from DB only
+ * - Related lessons/classes get teacherId/supervisorId set to NULL (via onDelete: SetNull)
+ * - Lessons and classes are NOT deleted
+ * 
+ * @param currentState - Current form state
+ * @param data - FormData containing the teacher ID
+ * @returns Success/error state with descriptive message
+ */
 export const deleteTeacher = async (
     currentState: CurrentState,
     data: FormData
 ) => {
     const id = data.get("id") as string;
-    try {
-        // Try to delete Clerk user if it exists
-        try {
-            const clerk = await clerkClient();
-            await clerk.users.deleteUser(id);
-        } catch (clerkError: any) {
-            // If the user doesn't exist in Clerk (404), that's okay - continue with DB delete
-            if (clerkError?.status !== 404) {
-                console.warn("Clerk delete failed (non-404):", clerkError?.message);
-            }
-        }
 
-        // Delete from database
-        await prisma.teacher.delete({
-            where: {
-                id: id,
-            },
+    // Validate id (defensive check)
+    if (!id || id.trim() === "") {
+        console.error("Invalid teacher ID provided");
+        return { success: false, error: true, message: "Invalid teacher ID" };
+    }
+
+    try {
+        // Fetch the teacher first to get clerkUserId and ensure it exists
+        const teacher = await prisma.teacher.findUnique({
+            where: { id },
+            select: { id: true, clerkUserId: true, name: true, surname: true },
         });
 
+        if (!teacher) {
+            console.warn(`Teacher with id ${id} not found (may have been already deleted)`);
+            return { success: false, error: true, message: "Teacher not found or already deleted" };
+        }
+
+        // Delete the teacher from database in a transaction
+        // The database will automatically set Lesson.teacherId and Class.supervisorId to NULL
+        // due to onDelete: SetNull constraints
+        await prisma.$transaction(async (tx) => {
+            await tx.teacher.delete({
+                where: { id },
+            });
+        });
+
+        // After successful database deletion, try to delete Clerk user if clerkUserId exists
+        if (teacher.clerkUserId && teacher.clerkUserId.trim() !== "") {
+            try {
+                const clerk = await clerkClient();
+                await clerk.users.deleteUser(teacher.clerkUserId);
+                console.info(`Successfully deleted teacher ${teacher.name} ${teacher.surname} and their Clerk account`);
+            } catch (clerkError: any) {
+                // If the user doesn't exist in Clerk (404), that's okay - already deleted or never existed
+                if (clerkError?.status === 404) {
+                    console.info(`Clerk user ${teacher.clerkUserId} not found (404) - already deleted or never existed`);
+                } else {
+                    // For non-404 errors, log warning and return partial success
+                    console.warn(`Clerk delete failed for user ${teacher.clerkUserId}:`, clerkError?.message);
+                    return {
+                        success: true,
+                        error: false,
+                        message: `Teacher ${teacher.name} ${teacher.surname} deleted from database, but Clerk user deletion failed. Please check Clerk dashboard.`
+                    };
+                }
+            }
+        } else {
+            // Teacher has no linked Clerk account
+            console.info(`Teacher ${teacher.name} ${teacher.surname} deleted from database. No linked Clerk user to delete.`);
+        }
+
         // revalidatePath("/list/teachers");
-        return { success: true, error: false };
-    } catch (err) {
-        console.log(err);
-        return { success: false, error: true };
+        const finalMessage = teacher.clerkUserId
+            ? `Teacher ${teacher.name} ${teacher.surname} deleted successfully`
+            : `Teacher ${teacher.name} ${teacher.surname} deleted from database. No linked Clerk account.`;
+        return { success: true, error: false, message: finalMessage };
+    } catch (err: any) {
+        console.error("Error deleting teacher:", err);
+        return { success: false, error: true, message: err.message || "Failed to delete teacher" };
+    }
+};
+
+/**
+ * Links a Clerk user account to an existing teacher by clerkUserId.
+ * 
+ * This is useful for teachers created without a Clerk account or when
+ * manual linking is needed after account creation.
+ * 
+ * @param currentState - Current form state
+ * @param data - Object containing teacherId and clerkUserId
+ * @returns Success/error state with descriptive message
+ */
+export const linkTeacherToClerkUser = async (
+    currentState: CurrentState,
+    data: { teacherId: string; clerkUserId: string }
+) => {
+    const { teacherId, clerkUserId } = data;
+
+    // Validate inputs
+    if (!teacherId || teacherId.trim() === "") {
+        console.error("Invalid teacher ID provided");
+        return { success: false, error: true, message: "Invalid teacher ID" };
+    }
+
+    if (!clerkUserId || clerkUserId.trim() === "") {
+        console.error("Invalid Clerk user ID provided");
+        return { success: false, error: true, message: "Invalid Clerk user ID" };
+    }
+
+    try {
+        // Verify teacher exists
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            select: { id: true, name: true, surname: true, clerkUserId: true },
+        });
+
+        if (!teacher) {
+            return { success: false, error: true, message: "Teacher not found" };
+        }
+
+        // Check if teacher already has a different clerkUserId
+        if (teacher.clerkUserId && teacher.clerkUserId !== clerkUserId) {
+            return {
+                success: false,
+                error: true,
+                message: `Teacher is already linked to Clerk user ${teacher.clerkUserId}. Please unlink first.`,
+            };
+        }
+
+        // Verify Clerk user exists
+        try {
+            const clerk = await clerkClient();
+            const clerkUser = await clerk.users.getUser(clerkUserId);
+
+            if (!clerkUser) {
+                return { success: false, error: true, message: "Clerk user not found" };
+            }
+
+            // Update teacher with clerkUserId
+            await prisma.teacher.update({
+                where: { id: teacherId },
+                data: { clerkUserId },
+            });
+
+            console.info(`Successfully linked teacher ${teacher.name} ${teacher.surname} to Clerk user ${clerkUserId}`);
+            return {
+                success: true,
+                error: false,
+                message: `Successfully linked ${teacher.name} ${teacher.surname} to Clerk account`,
+            };
+        } catch (clerkError: any) {
+            console.error("Clerk user verification failed:", clerkError?.message);
+            return {
+                success: false,
+                error: true,
+                message: `Clerk user ${clerkUserId} not found or invalid`,
+            };
+        }
+    } catch (err: any) {
+        console.error("Error linking teacher to Clerk user:", err);
+        return { success: false, error: true, message: err.message || "Failed to link teacher" };
+    }
+};
+
+/**
+ * Unlinks a Clerk user account from a teacher by setting clerkUserId to null.
+ * 
+ * @param currentState - Current form state
+ * @param data - FormData containing the teacher ID
+ * @returns Success/error state with descriptive message
+ */
+export const unlinkTeacherFromClerkUser = async (
+    currentState: CurrentState,
+    data: FormData
+) => {
+    const teacherId = data.get("teacherId") as string;
+
+    // Validate input
+    if (!teacherId || teacherId.trim() === "") {
+        console.error("Invalid teacher ID provided");
+        return { success: false, error: true, message: "Invalid teacher ID" };
+    }
+
+    try {
+        // Verify teacher exists
+        const teacher = await prisma.teacher.findUnique({
+            where: { id: teacherId },
+            select: { id: true, name: true, surname: true, clerkUserId: true },
+        });
+
+        if (!teacher) {
+            return { success: false, error: true, message: "Teacher not found" };
+        }
+
+        if (!teacher.clerkUserId) {
+            return {
+                success: false,
+                error: true,
+                message: "Teacher is not linked to any Clerk account",
+            };
+        }
+
+        // Unlink by setting clerkUserId to null
+        await prisma.teacher.update({
+            where: { id: teacherId },
+            data: { clerkUserId: null },
+        });
+
+        console.info(`Successfully unlinked teacher ${teacher.name} ${teacher.surname} from Clerk user ${teacher.clerkUserId}`);
+        return {
+            success: true,
+            error: false,
+            message: `Successfully unlinked ${teacher.name} ${teacher.surname} from Clerk account`,
+        };
+    } catch (err: any) {
+        console.error("Error unlinking teacher from Clerk user:", err);
+        return { success: false, error: true, message: err.message || "Failed to unlink teacher" };
     }
 };
 
@@ -299,7 +598,11 @@ export const createStudent = async (
     try {
         if (!data.password || data.password.length < 8) {
             console.error("Password is required and must be at least 8 characters");
-            return { success: false, error: true };
+            return {
+                success: false,
+                error: true,
+                message: "Password is required and must be at least 8 characters long!"
+            };
         }
 
         const classItem = await prisma.class.findUnique({
@@ -308,7 +611,11 @@ export const createStudent = async (
         });
 
         if (classItem && classItem.capacity === classItem._count.students) {
-            return { success: false, error: true };
+            return {
+                success: false,
+                error: true,
+                message: `Class ${classItem.name} is already at full capacity (${classItem.capacity} students)!`
+            };
         }
 
         // Sanitize username to ensure it only contains valid characters
@@ -338,8 +645,8 @@ export const createStudent = async (
                 sex: data.sex,
                 birthday: data.birthday,
                 gradeId: data.gradeId,
-                classId: data.classId,
-                parentId: data.parentId,
+                classId: data.classId || null,
+                parentId: data.parentId && data.parentId.trim() !== "" ? data.parentId : null,
             },
         });
 
@@ -348,7 +655,33 @@ export const createStudent = async (
     } catch (err: any) {
         console.error("Error creating student:", err);
         console.error("Clerk errors:", err?.errors);
-        return { success: false, error: true };
+
+        // Extract user-friendly error message from Clerk errors
+        if (err?.errors && Array.isArray(err.errors) && err.errors.length > 0) {
+            const clerkError = err.errors[0];
+            if (clerkError.message) {
+                return {
+                    success: false,
+                    error: true,
+                    message: clerkError.message
+                };
+            }
+        }
+
+        // Fallback error messages
+        if (err?.message) {
+            return {
+                success: false,
+                error: true,
+                message: err.message
+            };
+        }
+
+        return {
+            success: false,
+            error: true,
+            message: "Failed to create student. Please check your input and try again."
+        };
     }
 };
 
@@ -394,8 +727,8 @@ export const updateStudent = async (
                 sex: data.sex,
                 birthday: data.birthday,
                 gradeId: data.gradeId,
-                classId: data.classId,
-                parentId: data.parentId,
+                classId: data.classId || null,
+                parentId: data.parentId && data.parentId.trim() !== "" ? data.parentId : null,
             },
         });
         // revalidatePath("/list/students");
@@ -412,25 +745,234 @@ export const deleteStudent = async (
 ) => {
     const id = data.get("id") as string;
     try {
+        // Delete all related data in a transaction
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete all results for this student
+            await tx.result.deleteMany({
+                where: { studentId: id },
+            });
+
+            // 2. Delete all attendance records for this student
+            await tx.attendance.deleteMany({
+                where: { studentId: id },
+            });
+
+            // 3. Delete the student from database
+            await tx.student.delete({
+                where: { id: id },
+            });
+        });
+
         // Try to delete Clerk user if it exists
         try {
             const clerk = await clerkClient();
             await clerk.users.deleteUser(id);
         } catch (clerkError: any) {
-            // If the user doesn't exist in Clerk (404), that's okay - continue with DB delete
+            // If the user doesn't exist in Clerk (404), that's okay
             if (clerkError?.status !== 404) {
                 console.warn("Clerk delete failed (non-404):", clerkError?.message);
             }
         }
 
-        // Delete from database
-        await prisma.student.delete({
-            where: {
-                id: id,
+        // revalidatePath("/list/students");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+/**
+ * Deletes a parent from the database and optionally from Clerk.
+ * 
+ * When a parent is deleted, their students' parentId is automatically set to NULL
+ * due to the onDelete: SetNull constraint in the schema.
+ * 
+ * @param currentState - Current form state
+ * @param data - FormData containing the parent ID
+ * @returns Success/error state with descriptive message
+ */
+export const deleteParent = async (
+    currentState: CurrentState,
+    data: FormData
+) => {
+    const id = data.get("id") as string;
+
+    // Validate id
+    if (!id || id.trim() === "") {
+        console.error("Invalid parent ID provided");
+        return { success: false, error: true, message: "Invalid parent ID" };
+    }
+
+    try {
+        // Fetch the parent first to verify existence
+        const parent = await prisma.parent.findUnique({
+            where: { id },
+            select: { id: true, name: true, surname: true, students: true },
+        });
+
+        if (!parent) {
+            console.warn(`Parent with id ${id} not found`);
+            return { success: false, error: true, message: "Parent not found or already deleted" };
+        }
+
+        // Delete the parent from database
+        // Students' parentId will automatically be set to NULL due to onDelete: SetNull
+        await prisma.parent.delete({
+            where: { id },
+        });
+
+        // Try to delete Clerk user if it exists
+        try {
+            const clerk = await clerkClient();
+            await clerk.users.deleteUser(id);
+            console.info(`Successfully deleted parent ${parent.name} ${parent.surname} and their Clerk account`);
+        } catch (clerkError: any) {
+            // If the user doesn't exist in Clerk (404), that's okay
+            if (clerkError?.status === 404) {
+                console.info(`Clerk user ${id} not found (404) - already deleted or never existed`);
+            } else {
+                console.warn("Clerk delete failed (non-404):", clerkError?.message);
+                return {
+                    success: true,
+                    error: false,
+                    message: `Parent ${parent.name} ${parent.surname} deleted from database, but Clerk user deletion failed.`
+                };
+            }
+        }
+
+        const studentCount = parent.students.length;
+        const studentMessage = studentCount > 0
+            ? ` ${studentCount} student${studentCount > 1 ? 's' : ''} now have no assigned parent.`
+            : '';
+
+        // revalidatePath("/list/parents");
+        return {
+            success: true,
+            error: false,
+            message: `Parent ${parent.name} ${parent.surname} deleted successfully.${studentMessage}`
+        };
+    } catch (err: any) {
+        console.error("Error deleting parent:", err);
+        return { success: false, error: true, message: err.message || "Failed to delete parent" };
+    }
+};
+
+export const createParent = async (
+    currentState: CurrentState,
+    data: ParentSchema
+) => {
+    try {
+        if (!data.password || data.password.length < 8) {
+            console.error("Password is required and must be at least 8 characters");
+            return {
+                success: false,
+                error: true,
+                message: "Password is required and must be at least 8 characters long!"
+            };
+        }
+
+        // Sanitize username to ensure it only contains valid characters
+        const sanitizedUsername = sanitizeUsername(data.username);
+
+        const clerk = await clerkClient();
+        const user = await clerk.users.createUser({
+            username: sanitizedUsername,
+            password: data.password,
+            firstName: data.name,
+            lastName: data.surname,
+            ...(data.email && { emailAddress: [data.email] }),
+            publicMetadata: { role: "parent" }
+        });
+
+        await prisma.parent.create({
+            data: {
+                id: user.id,
+                username: sanitizedUsername,
+                name: data.name,
+                surname: data.surname,
+                email: data.email || null,
+                phone: data.phone,
+                address: data.address,
             },
         });
 
-        // revalidatePath("/list/students");
+        // revalidatePath("/list/parents");
+        return { success: true, error: false };
+    } catch (err: any) {
+        console.error("Error creating parent:", err);
+        console.error("Clerk errors:", err?.errors);
+
+        // Extract user-friendly error message from Clerk errors
+        if (err?.errors && Array.isArray(err.errors) && err.errors.length > 0) {
+            const clerkError = err.errors[0];
+            if (clerkError.message) {
+                return {
+                    success: false,
+                    error: true,
+                    message: clerkError.message
+                };
+            }
+        }
+
+        // Fallback error messages
+        if (err?.message) {
+            return {
+                success: false,
+                error: true,
+                message: err.message
+            };
+        }
+
+        return {
+            success: false,
+            error: true,
+            message: "Failed to create parent. Please check your input and try again."
+        };
+    }
+};
+
+export const updateParent = async (
+    currentState: CurrentState,
+    data: ParentSchema
+) => {
+    if (!data.id) {
+        return { success: false, error: true };
+    }
+    try {
+        // Try to update Clerk user if it exists
+        try {
+            const clerk = await clerkClient();
+            await clerk.users.updateUser(data.id, {
+                username: data.username,
+                ...(data.password !== "" && { password: data.password }),
+                firstName: data.name,
+                lastName: data.surname,
+            });
+        } catch (clerkError: any) {
+            // If the user doesn't exist in Clerk (404), that's okay - continue with DB update
+            if (clerkError?.status !== 404) {
+                console.warn("Clerk update failed (non-404):", clerkError?.message);
+            }
+        }
+
+        // Update the database
+        await prisma.parent.update({
+            where: {
+                id: data.id,
+            },
+            data: {
+                ...(data.password !== "" && { password: data.password }),
+                username: data.username,
+                name: data.name,
+                surname: data.surname,
+                email: data.email || null,
+                phone: data.phone,
+                address: data.address,
+            },
+        });
+
+        // revalidatePath("/list/parents");
         return { success: true, error: false };
     } catch (err) {
         console.log(err);
@@ -760,8 +1302,8 @@ export const createLesson = async (
                 startTime: data.startTime,
                 endTime: data.endTime,
                 subjectId: data.subjectId,
-                classId: data.classId,
-                teacherId: data.teacherId,
+                classId: data.classId || null,
+                teacherId: data.teacherId && data.teacherId.trim() !== "" ? data.teacherId : null,
             },
         });
 
@@ -788,8 +1330,8 @@ export const updateLesson = async (
                 startTime: data.startTime,
                 endTime: data.endTime,
                 subjectId: data.subjectId,
-                classId: data.classId,
-                teacherId: data.teacherId,
+                classId: data.classId || null,
+                teacherId: data.teacherId && data.teacherId.trim() !== "" ? data.teacherId : null,
             },
         });
 

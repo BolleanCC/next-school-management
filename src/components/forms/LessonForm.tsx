@@ -166,8 +166,11 @@ const LessonForm = ({
                     <select
                         className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
                         {...register("teacherId")}
-                        defaultValue={data?.teacherId}
+                        defaultValue={data?.teacherId || ""}
                     >
+                        <option value="" className="text-amber-600 italic">
+                            ⚠️ Unassigned - Awaiting Assignment
+                        </option>
                         {teachers.map((teacher: { id: string; name: string; surname: string }) => (
                             <option value={teacher.id} key={teacher.id}>
                                 {teacher.name + " " + teacher.surname}

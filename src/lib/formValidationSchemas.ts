@@ -22,8 +22,8 @@ export const teacherSchema = z.object({
     id: z.string().optional(),
     username: z
         .string()
-        .min(3, { message: "Username must be at least 3 characters long!" })
-        .max(20, { message: "Username must be at most 20 characters long!" })
+        .min(4, { message: "Username must be at least 4 characters long!" })
+        .max(64, { message: "Username must be at most 64 characters long!" })
         .regex(/^[a-zA-Z0-9_-]+$/, { message: "Username can only contain letters, numbers, hyphens, and underscores!" }),
     password: z
         .string()
@@ -48,12 +48,37 @@ export const teacherSchema = z.object({
 
 export type TeacherSchema = z.infer<typeof teacherSchema>;
 
+export const parentSchema = z.object({
+    id: z.string().optional(),
+    username: z
+        .string()
+        .min(4, { message: "Username must be at least 4 characters long!" })
+        .max(64, { message: "Username must be at most 64 characters long!" })
+        .regex(/^[a-zA-Z0-9_-]+$/, { message: "Username can only contain letters, numbers, hyphens, and underscores!" }),
+    password: z
+        .string()
+        .min(8, { message: "Password must be at least 8 characters long!" })
+        .optional()
+        .or(z.literal("")),
+    name: z.string().min(1, { message: "First name is required!" }),
+    surname: z.string().min(1, { message: "Last name is required!" }),
+    email: z
+        .string()
+        .email({ message: "Invalid email address!" })
+        .optional()
+        .or(z.literal("")),
+    phone: z.string().min(1, { message: "Phone is required!" }),
+    address: z.string().min(1, { message: "Address is required!" }),
+});
+
+export type ParentSchema = z.infer<typeof parentSchema>;
+
 export const studentSchema = z.object({
     id: z.string().optional(),
     username: z
         .string()
-        .min(3, { message: "Username must be at least 3 characters long!" })
-        .max(20, { message: "Username must be at most 20 characters long!" })
+        .min(4, { message: "Username must be at least 4 characters long!" })
+        .max(64, { message: "Username must be at most 64 characters long!" })
         .regex(/^[a-zA-Z0-9_-]+$/, { message: "Username can only contain letters, numbers, hyphens, and underscores!" }),
     password: z
         .string()
@@ -74,8 +99,8 @@ export const studentSchema = z.object({
     birthday: z.coerce.date({ message: "Birthday is required!" }),
     sex: z.enum(["MALE", "FEMALE"], { message: "Sex is required!" }),
     gradeId: z.coerce.number().min(1, { message: "Grade is required!" }),
-    classId: z.coerce.number().min(1, { message: "Class is required!" }),
-    parentId: z.string().min(1, { message: "Parent Id is required!" }),
+    classId: z.coerce.number().optional().or(z.literal("").transform(() => undefined)),
+    parentId: z.string().optional().or(z.literal("")),
 });
 
 export type StudentSchema = z.infer<typeof studentSchema>;
@@ -128,8 +153,8 @@ export const lessonSchema = z.object({
     startTime: z.coerce.date({ message: "Start time is required!" }),
     endTime: z.coerce.date({ message: "End time is required!" }),
     subjectId: z.coerce.number({ message: "Subject is required!" }),
-    classId: z.coerce.number({ message: "Class is required!" }),
-    teacherId: z.string().min(1, { message: "Teacher is required!" }),
+    classId: z.coerce.number().optional().or(z.literal("").transform(() => undefined)),
+    teacherId: z.coerce.string().optional().or(z.literal("")),
 });
 
 export type LessonSchema = z.infer<typeof lessonSchema>;
