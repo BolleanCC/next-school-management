@@ -20,7 +20,7 @@ const LessonListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
 
     const columns = [
         {
-            header: "Subject Name",
+            header: "LessonName",
             accessor: "name",
         },
         {
@@ -43,7 +43,7 @@ const LessonListPage = async ({ searchParams }: { searchParams: Promise<{ [key: 
             key={item.id}
             className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
         >
-            <td className="flex items-center gap-4 p-4">{item.subject.name}</td>
+            <td className="flex items-center gap-4 p-4">{item.name}</td>
             <td>
                 {item.class ? (
                     item.class.name
