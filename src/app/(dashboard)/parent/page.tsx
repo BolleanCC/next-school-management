@@ -5,6 +5,8 @@ import BigCalendarContainer from "@/components/BigCalendarContainer";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 const Parentpage = async ({
     searchParams,
 }: {

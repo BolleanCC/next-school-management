@@ -9,6 +9,8 @@ import Image from "next/image";
 import { Class, Exam, Prisma, Subject, Teacher } from "@prisma/client";
 import FormContainer from "@/components/FormContainer";
 
+export const runtime = "nodejs";
+
 type ExamList = Exam & { lesson: { subject: Subject, class: Class | null, teacher: Teacher | null } }
 
 const ExamListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

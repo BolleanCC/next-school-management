@@ -8,6 +8,8 @@ import Image from "next/image";
 import { Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
 import { getCurrentUserId, getRole } from "@/lib/data";
 
+export const runtime = "nodejs";
+
 type AssignmentList = Assignment & { lesson: { subject: Subject, class: Class | null, teacher: Teacher | null } }
 
 const AssignmentListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

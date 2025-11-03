@@ -1,6 +1,9 @@
 import Image from "next/image";
 import prisma from "@/lib/prisma";
 import { da } from "zod/locales";
+
+export const runtime = "nodejs";
+
 const UserCard = async ({ type }: { type: "admin" | "teacher" | "student" | "parent" }) => {
 
     const modelMap: Record<typeof type, any> = {

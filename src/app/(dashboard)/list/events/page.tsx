@@ -8,6 +8,8 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Class, Event, Prisma } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 type EventList = Event & { class: Class | null }
 
 const EventListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

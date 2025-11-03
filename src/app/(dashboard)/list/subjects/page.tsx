@@ -8,6 +8,8 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Prisma, Subject, Teacher } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 type SubjectList = Subject & { teachers: Teacher[] }
 
 const columns = [

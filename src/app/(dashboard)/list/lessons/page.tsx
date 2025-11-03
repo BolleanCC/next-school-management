@@ -8,6 +8,8 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Class, Lesson, Prisma, Subject, Teacher } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 type LessonList = Lesson & { subject: Subject, teacher: Teacher | null, class: Class | null }
 
 const LessonListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

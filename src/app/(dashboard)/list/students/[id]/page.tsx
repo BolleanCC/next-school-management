@@ -12,6 +12,8 @@ import StudentAttendanceCard from "@/components/StudentAttendanceCard";
 import BigCalendarContainer from "@/components/BigCalendarContainer";
 import FormContainer from "@/components/FormContainer";
 
+export const runtime = "nodejs";
+
 const SingleStudentPage = async ({
     params,
 }: {

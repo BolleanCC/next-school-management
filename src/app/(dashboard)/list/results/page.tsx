@@ -8,6 +8,8 @@ import { ITEMS_PER_PAGE } from "@/lib/settings";
 import Image from "next/image";
 import { Prisma } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 type ResultList = { id: number; title: string; studentName: string; studentSurname: string; teacherName: string; teacherSurname: string; score: number; className: string; startTime: Date }
 
 const ResultListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

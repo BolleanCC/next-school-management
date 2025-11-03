@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import FormModal from "./FormModal";
 import { auth } from "@clerk/nextjs/server";
 
+export const runtime = "nodejs";
+
 export type FormContainerProps = {
     table:
     | "teacher"

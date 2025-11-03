@@ -10,6 +10,10 @@ import { getCurrentUserId, getRole } from "@/lib/data";
 
 
 
+export const runtime = "nodejs";
+
+
+
 
 type AnnouncementList = Announcement & { class: Class | null }
 

@@ -11,6 +11,8 @@ import FormModal from "@/components/FormModal";
 import FormContainer from "@/components/FormContainer";
 import { auth } from "@clerk/nextjs/server";
 
+export const runtime = "nodejs";
+
 type ParentList = Parent & { students: Student[] }
 
 const ParentListPage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 const EventList = async ({ dateParam }: { dateParam: string | undefined }) => {
     const date = dateParam ? new Date(dateParam) : new Date();
 

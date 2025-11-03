@@ -1,6 +1,9 @@
 import prisma from "@/lib/prisma";
 import BigCalendar from "./BigCalendar";
 import { adjustScheduleToCurrentWeek } from "@/lib/utils";
+
+export const runtime = "nodejs";
+
 const BigCalendarContainer = async ({ type, id }: { type: "teacherId" | "classId" | "clerkUserId"; id: string | number }) => {
 
     let whereClause: any;

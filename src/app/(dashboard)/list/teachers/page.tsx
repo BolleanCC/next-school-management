@@ -12,6 +12,8 @@ import prisma from "@/lib/prisma";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import { Prisma } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
 const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {

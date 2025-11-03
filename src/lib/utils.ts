@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 type UserRole = "admin" | "teacher" | "student" | "parent";
 
 export const getRole = async () => {

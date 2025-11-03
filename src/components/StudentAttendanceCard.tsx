@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 const StudentAttendanceCard = async ({ id }: { id: string }) => {
 
     const attendance = await prisma.attendance.findMany({

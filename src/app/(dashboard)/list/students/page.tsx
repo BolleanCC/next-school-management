@@ -11,6 +11,8 @@ import FormContainer from "@/components/FormContainer";
 import { auth } from "@clerk/nextjs/server";
 import { getRole } from "@/lib/utils";
 
+export const runtime = "nodejs";
+
 type StudentList = Student & { class: Class | null }
 
 const columns = [

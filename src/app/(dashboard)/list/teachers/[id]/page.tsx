@@ -9,6 +9,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRole } from "@/lib/utils";
 
+export const runtime = "nodejs";
+
 
 
 const SingleTeacherPage = async ({
