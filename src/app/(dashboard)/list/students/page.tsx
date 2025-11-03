@@ -3,14 +3,16 @@ import TableSearch from "@/components/TableSearch";
 import Image from "next/image";
 import Table from "@/components/Table";
 import Link from "next/link";
-import { role, studentsData } from "@/lib/data";
 import FormModal from "@/components/FormModal";
 import prisma from "@/lib/prisma";
 import { Class, Prisma, Student } from "@prisma/client";
 import { ITEMS_PER_PAGE } from "@/lib/settings";
 import FormContainer from "@/components/FormContainer";
+import { auth } from "@clerk/nextjs/server";
+import { getRole } from "@/lib/utils";
 
 type StudentList = Student & { class: Class | null }
+
 const columns = [
     {
         header: "Info",
@@ -41,7 +43,8 @@ const columns = [
         accessor: "action",
     },
 ];
-const renderRow = (item: StudentList) => (
+
+const createRenderRow = (userRole: string | undefined) => (item: StudentList) => (
     <tr
         key={item.id}
         className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
@@ -74,7 +77,7 @@ const renderRow = (item: StudentList) => (
                         <Image src="/view.png" alt="" width={16} height={16} />
                     </button>
                 </Link>
-                {role === "admin" && (
+                {userRole === "admin" && (
                     <FormModal table="student" type="delete" id={item.id} />
                 )}
             </div>
@@ -88,14 +91,41 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
 
     const p = page ? parseInt(page) : 1;
 
+    // Get current user's role and ID
+    const currentRole = await getRole();
+    const { userId } = await auth();
+
     const query: Prisma.StudentWhereInput = {}
+
+    // If user is a teacher, only show students from their classes
+    if (currentRole === "teacher" && userId) {
+        query.class = {
+            lessons: {
+                some: {
+                    teacherId: userId,
+                },
+            },
+        };
+    }
 
     if (queryParams) {
         for (const [key, value] of Object.entries(queryParams)) {
             if (value !== undefined) {
                 switch (key) {
                     case "teacherId":
-                        query.class = { lessons: { some: { teacherId: value } } }
+                        // Override or merge with existing class filter
+                        if (currentRole === "teacher" && userId) {
+                            // Teacher can only see their own students even if filtering
+                            query.class = {
+                                lessons: {
+                                    some: {
+                                        teacherId: userId,
+                                    },
+                                },
+                            };
+                        } else {
+                            query.class = { lessons: { some: { teacherId: value } } };
+                        }
                         break;
                     case "search":
                         query.name = { contains: value, mode: "insensitive" }
@@ -120,11 +150,14 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
         prisma.student.count({ where: query }),
     ]);
 
+    const renderRow = createRenderRow(currentRole);
 
     return <div className="p-4 rounded-md bg-white flex-1 mt-0">
         {/* {TOP} */}
         <div className="flex items-center justify-between">
-            <h1 className="hidden md:block text-lg font-semibold">All Students</h1>
+            <h1 className="hidden md:block text-lg font-semibold">
+                {currentRole === "teacher" ? "My Students" : "All Students"}
+            </h1>
             <div className="flex flex-col md:flex-row items-center gap-4 my-4">
                 <TableSearch />
                 <div className="flex items-center gap-4 self-end">
@@ -134,7 +167,7 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                     <button className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow">
                         <Image src="/sort.png" alt="add" width={14} height={14} />
                     </button>
-                    {role === "admin" && <FormContainer table="student" type="create" />}
+                    {currentRole === "admin" && <FormContainer table="student" type="create" />}
                 </div>
             </div>
         </div>
