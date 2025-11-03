@@ -37,7 +37,18 @@ const BigCalendarContainer = async ({ type, id }: { type: "teacherId" | "classId
         where: whereClause,
     });
 
-    const data = dataRes.map((lesson) => ({
+    // Strict filter to only include valid lessons with proper name and time data
+    const validLessons = dataRes.filter((lesson) =>
+        lesson &&
+        lesson.id &&
+        lesson.name &&
+        lesson.name.trim().length > 0 &&
+        lesson.startTime &&
+        lesson.endTime &&
+        lesson.day
+    );
+
+    const data = validLessons.map((lesson) => ({
         title: lesson.name,
         start: lesson.startTime,
         end: lesson.endTime,

@@ -105,7 +105,20 @@ export const adjustScheduleToCurrentWeek = (
         FRIDAY: 4,
     };
 
-    return lessons.map((lesson) => {
+    // Strict filter to only include valid lessons
+    const validLessons = lessons.filter((lesson) =>
+        lesson &&
+        lesson.title &&
+        lesson.title.trim().length > 0 &&
+        lesson.start instanceof Date &&
+        !isNaN(lesson.start.getTime()) &&
+        lesson.end instanceof Date &&
+        !isNaN(lesson.end.getTime()) &&
+        lesson.day &&
+        dayMap.hasOwnProperty(lesson.day)
+    );
+
+    return validLessons.map((lesson) => {
         const daysFromMonday = dayMap[lesson.day] ?? 0;
 
         // Extract just the time components from the original dates
