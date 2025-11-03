@@ -14,6 +14,15 @@ const BigCalendar = ({ data }: { data: { title: string; start: Date; end: Date }
         setView(selectedView);
     }
 
+    // Custom date formats to show day names instead of dates
+    const formats = {
+        dayFormat: (date: Date, culture?: string, localizer?: any) =>
+            localizer.format(date, 'ddd', culture), // Mon, Tue, Wed, etc.
+        dayHeaderFormat: (date: Date, culture?: string, localizer?: any) =>
+            localizer.format(date, 'dddd', culture), // Monday, Tuesday, etc.
+        dayRangeHeaderFormat: () => 'Weekly Schedule', // Custom header for week view
+    };
+
     // Custom event style getter
     const eventStyleGetter = (event: Event) => {
         const colors = [
@@ -60,6 +69,31 @@ const BigCalendar = ({ data }: { data: { title: string; start: Date; end: Date }
         );
     };
 
+    // Custom toolbar component without navigation buttons
+    const CustomToolbar = (toolbar: any) => {
+        return (
+            <div className="rbc-toolbar">
+                <span className="rbc-toolbar-label">Weekly Schedule</span>
+                <span className="rbc-btn-group">
+                    <button
+                        type="button"
+                        onClick={() => toolbar.onView('work_week')}
+                        className={toolbar.view === 'work_week' ? 'rbc-active' : ''}
+                    >
+                        Week
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => toolbar.onView('day')}
+                        className={toolbar.view === 'day' ? 'rbc-active' : ''}
+                    >
+                        Day
+                    </button>
+                </span>
+            </div>
+        );
+    };
+
     return (
         <>
             <Calendar
@@ -71,15 +105,19 @@ const BigCalendar = ({ data }: { data: { title: string; start: Date; end: Date }
                 view={view}
                 style={{ height: '98%' }}
                 onView={handleViewChange}
-                min={new Date(2025, 1, 0, 8, 0, 0)}
-                max={new Date(2025, 1, 0, 17, 0, 0)}
+                min={new Date(2024, 0, 1, 8, 0, 0)}
+                max={new Date(2024, 0, 1, 17, 0, 0)}
+                formats={formats}
                 eventPropGetter={eventStyleGetter}
                 components={{
                     event: CustomEvent,
+                    toolbar: CustomToolbar,
                 }}
                 step={30}
                 timeslots={2}
                 dayLayoutAlgorithm="no-overlap"
+                date={new Date(2024, 0, 1)}
+                onNavigate={() => { }} // Disable navigation since we show a fixed week
             />
             <style jsx global>{`
                 /* Calendar container styling */

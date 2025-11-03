@@ -10,55 +10,54 @@ export const getCurrentUserId = async () => {
     return userId;
 };
 
-const getLatestMonday = (): Date => {
-    const today = new Date();
-
-    // Use UTC methods to avoid timezone issues
-    const dayOfWeek = today.getUTCDay();
-    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-    // Create a new Date object for Monday (don't mutate today)
-    const latestMonday = new Date(today);
-    latestMonday.setUTCDate(today.getUTCDate() - daysSinceMonday);
-
-    // Set time to 00:00:00 UTC
-    latestMonday.setUTCHours(0, 0, 0, 0);
-
-    return latestMonday;
+/**
+ * Get a reference Monday for the calendar
+ * We use a fixed reference week to avoid timezone issues
+ * The actual date doesn't matter - we only care about day of week and time
+ */
+const getReferenceMonday = (): Date => {
+    // Use a fixed date: January 1, 2024 (which is a Monday)
+    // This avoids any timezone conversion issues
+    return new Date(2024, 0, 1, 0, 0, 0, 0);
 };
 
+/**
+ * Adjust lesson schedule to display on the calendar
+ * Uses a fixed reference week to avoid timezone issues
+ * Only the day of week and time matter, not the actual date
+ */
 export const adjustScheduleToCurrentWeek = (
     lessons: { title: string; start: Date; end: Date; day: string }[]
 ): { title: string; start: Date; end: Date }[] => {
-    const latestMonday = getLatestMonday();
+    // Get a fixed reference Monday
+    const referenceMonday = getReferenceMonday();
+
+    // Map Day enum to days from Monday (0 = Monday, 1 = Tuesday, etc.)
+    const dayMap: { [key: string]: number } = {
+        MONDAY: 0,
+        TUESDAY: 1,
+        WEDNESDAY: 2,
+        THURSDAY: 3,
+        FRIDAY: 4,
+    };
 
     return lessons.map((lesson) => {
-        // Map Day enum to days from Monday (0 = Monday, 1 = Tuesday, etc.)
-        const dayMap: { [key: string]: number } = {
-            MONDAY: 0,
-            TUESDAY: 1,
-            WEDNESDAY: 2,
-            THURSDAY: 3,
-            FRIDAY: 4,
-        };
-
         const daysFromMonday = dayMap[lesson.day] ?? 0;
 
-        // Use UTC methods to ensure consistency
-        const adjustedStartDate = new Date(latestMonday);
-        adjustedStartDate.setUTCDate(latestMonday.getUTCDate() + daysFromMonday);
-        adjustedStartDate.setUTCHours(
-            lesson.start.getUTCHours(),
-            lesson.start.getUTCMinutes(),
-            lesson.start.getUTCSeconds()
-        );
+        // Extract just the time components from the original dates
+        const startHours = lesson.start.getHours();
+        const startMinutes = lesson.start.getMinutes();
+        const endHours = lesson.end.getHours();
+        const endMinutes = lesson.end.getMinutes();
 
-        const adjustedEndDate = new Date(adjustedStartDate);
-        adjustedEndDate.setUTCHours(
-            lesson.end.getUTCHours(),
-            lesson.end.getUTCMinutes(),
-            lesson.end.getUTCSeconds()
-        );
+        // Create new dates using the reference Monday + day offset
+        const adjustedStartDate = new Date(referenceMonday);
+        adjustedStartDate.setDate(referenceMonday.getDate() + daysFromMonday);
+        adjustedStartDate.setHours(startHours, startMinutes, 0, 0);
+
+        const adjustedEndDate = new Date(referenceMonday);
+        adjustedEndDate.setDate(referenceMonday.getDate() + daysFromMonday);
+        adjustedEndDate.setHours(endHours, endMinutes, 0, 0);
 
         return {
             title: lesson.title,
