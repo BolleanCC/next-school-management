@@ -2,6 +2,7 @@
 
 import {
     AnnouncementSchema,
+    AssignmentSchema,
     ClassSchema,
     EventSchema,
     ExamSchema,
@@ -13,7 +14,7 @@ import {
     TeacherSchema,
 } from "./formValidationSchemas";
 import prisma from "./prisma";
-import { clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 type CurrentState = { success: boolean; error: boolean; message?: string };
@@ -1357,6 +1358,133 @@ export const deleteLesson = async (
         });
 
         // revalidatePath("/list/lessons");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+// ASSIGNMENT ACTIONS
+
+export const createAssignment = async (
+    currentState: CurrentState,
+    data: AssignmentSchema
+) => {
+    try {
+        const { userId, sessionClaims } = await auth();
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+        // If teacher, verify they own the lesson
+        if (role === "teacher") {
+            const lesson = await prisma.lesson.findUnique({
+                where: { id: data.lessonId },
+                select: { teacherId: true },
+            });
+
+            if (!lesson || lesson.teacherId !== userId) {
+                return {
+                    success: false,
+                    error: true,
+                    message: "You can only create assignments for your own lessons."
+                };
+            }
+        }
+
+        await prisma.assignment.create({
+            data: {
+                title: data.title,
+                startDate: data.startDate,
+                dueDate: data.dueDate,
+                lessonId: data.lessonId,
+            },
+        });
+
+        // revalidatePath("/list/assignments");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+export const updateAssignment = async (
+    currentState: CurrentState,
+    data: AssignmentSchema
+) => {
+    try {
+        const { userId, sessionClaims } = await auth();
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+        // If teacher, verify they own the lesson this assignment belongs to
+        if (role === "teacher") {
+            const assignment = await prisma.assignment.findUnique({
+                where: { id: data.id },
+                include: { lesson: { select: { teacherId: true } } },
+            });
+
+            if (!assignment || assignment.lesson.teacherId !== userId) {
+                return {
+                    success: false,
+                    error: true,
+                    message: "You don't have permission to update this assignment."
+                };
+            }
+        }
+
+        await prisma.assignment.update({
+            where: {
+                id: data.id,
+            },
+            data: {
+                title: data.title,
+                startDate: data.startDate,
+                dueDate: data.dueDate,
+                lessonId: data.lessonId,
+            },
+        });
+
+        // revalidatePath("/list/assignments");
+        return { success: true, error: false };
+    } catch (err) {
+        console.log(err);
+        return { success: false, error: true };
+    }
+};
+
+export const deleteAssignment = async (
+    currentState: CurrentState,
+    data: FormData
+) => {
+    const id = data.get("id") as string;
+
+    try {
+        const { userId, sessionClaims } = await auth();
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+        // If teacher, verify they own the lesson this assignment belongs to
+        if (role === "teacher") {
+            const assignment = await prisma.assignment.findUnique({
+                where: { id: parseInt(id) },
+                include: { lesson: { select: { teacherId: true } } },
+            });
+
+            if (!assignment || assignment.lesson.teacherId !== userId) {
+                return {
+                    success: false,
+                    error: true,
+                    message: "You don't have permission to delete this assignment."
+                };
+            }
+        }
+
+        await prisma.assignment.delete({
+            where: {
+                id: parseInt(id),
+            },
+        });
+
+        // revalidatePath("/list/assignments");
         return { success: true, error: false };
     } catch (err) {
         console.log(err);

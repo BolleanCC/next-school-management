@@ -12,10 +12,18 @@ export const getCurrentUserId = async () => {
 
 const getLatestMonday = (): Date => {
     const today = new Date();
-    const dayOfWeek = today.getDay();
+
+    // Use UTC methods to avoid timezone issues
+    const dayOfWeek = today.getUTCDay();
     const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const latestMonday = today;
-    latestMonday.setDate(today.getDate() - daysSinceMonday);
+
+    // Create a new Date object for Monday (don't mutate today)
+    const latestMonday = new Date(today);
+    latestMonday.setUTCDate(today.getUTCDate() - daysSinceMonday);
+
+    // Set time to 00:00:00 UTC
+    latestMonday.setUTCHours(0, 0, 0, 0);
+
     return latestMonday;
 };
 
@@ -36,19 +44,20 @@ export const adjustScheduleToCurrentWeek = (
 
         const daysFromMonday = dayMap[lesson.day] ?? 0;
 
+        // Use UTC methods to ensure consistency
         const adjustedStartDate = new Date(latestMonday);
-
-        adjustedStartDate.setDate(latestMonday.getDate() + daysFromMonday);
-        adjustedStartDate.setHours(
-            lesson.start.getHours(),
-            lesson.start.getMinutes(),
-            lesson.start.getSeconds()
+        adjustedStartDate.setUTCDate(latestMonday.getUTCDate() + daysFromMonday);
+        adjustedStartDate.setUTCHours(
+            lesson.start.getUTCHours(),
+            lesson.start.getUTCMinutes(),
+            lesson.start.getUTCSeconds()
         );
+
         const adjustedEndDate = new Date(adjustedStartDate);
-        adjustedEndDate.setHours(
-            lesson.end.getHours(),
-            lesson.end.getMinutes(),
-            lesson.end.getSeconds()
+        adjustedEndDate.setUTCHours(
+            lesson.end.getUTCHours(),
+            lesson.end.getUTCMinutes(),
+            lesson.end.getUTCSeconds()
         );
 
         return {
