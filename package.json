@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-attendance-duplicates": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} scripts/check-attendance-duplicates.ts",
+    "clean-attendance-duplicates": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} scripts/clean-attendance-duplicates.ts"
   },
   "dependencies": {
     "@clerk/elements": "^0.23.72",
@@ -36,6 +38,7 @@
     "eslint-config-next": "14.2.5",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   },
   "prisma": {

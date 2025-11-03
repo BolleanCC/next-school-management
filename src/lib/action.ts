@@ -1491,3 +1491,368 @@ export const deleteAssignment = async (
         return { success: false, error: true };
     }
 };
+
+// ============ ATTENDANCE ACTIONS ============
+
+type AttendanceListItem = {
+    id: number;
+    date: Date;
+    present: boolean;
+    student: {
+        id: string;
+        name: string;
+        surname: string;
+        username: string;
+        classId: number | null;
+    };
+    lesson: {
+        id: number;
+        name: string;
+        startTime: Date;
+        endTime: Date;
+        classId: number | null;
+        teacherId: string | null;
+    };
+};
+
+type AttendanceListResponse = {
+    success: boolean;
+    data?: AttendanceListItem[];
+    totalCount?: number;
+    error?: string;
+};
+
+/**
+ * Get attendance list with role-based filtering
+ */
+export const getAttendanceList = async (
+    filters: {
+        date?: string;
+        gradeId?: number;
+        classId?: number;
+        lessonId?: number;
+        search?: string;
+        status?: 'present' | 'absent' | 'all';
+        page?: number;
+        limit?: number;
+    }
+): Promise<AttendanceListResponse> => {
+    try {
+        const { userId, sessionClaims } = await auth();
+        if (!userId) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+        const limit = filters.limit || 25;
+        const skip = ((filters.page || 1) - 1) * limit;
+
+        // Base where clause
+        const where: any = {};
+
+        // Date filter (required)
+        if (filters.date) {
+            const targetDate = new Date(filters.date);
+            const nextDate = new Date(targetDate);
+            nextDate.setDate(nextDate.getDate() + 1);
+
+            where.date = {
+                gte: targetDate,
+                lt: nextDate,
+            };
+        }
+
+        // Status filter
+        if (filters.status && filters.status !== 'all') {
+            where.present = filters.status === 'present';
+        }
+
+        // Lesson filter
+        if (filters.lessonId) {
+            where.lessonId = filters.lessonId;
+        }
+
+        // Role-based filtering
+        if (role === "teacher") {
+            // Teachers can only see attendance for lessons they teach or classes they supervise
+            where.lesson = {
+                OR: [
+                    { teacherId: userId },
+                    { class: { supervisorId: userId } }
+                ]
+            };
+
+            // If lessonId filter is provided, verify teacher owns it
+            if (filters.lessonId) {
+                const lesson = await prisma.lesson.findUnique({
+                    where: { id: filters.lessonId },
+                    include: { class: true }
+                });
+
+                if (lesson && lesson.teacherId !== userId && lesson.class?.supervisorId !== userId) {
+                    return { success: false, error: "Access denied to this lesson" };
+                }
+            }
+        } else if (role === "parent") {
+            // Parents can only see attendance for their own students
+            where.student = {
+                parentId: userId
+            };
+        }
+
+        // Class filter (admin and teachers with access)
+        if (filters.classId) {
+            if (role === "teacher") {
+                // Verify teacher has access to this class
+                const classItem = await prisma.class.findUnique({
+                    where: { id: filters.classId },
+                    include: {
+                        lessons: {
+                            where: { teacherId: userId }
+                        }
+                    }
+                });
+
+                if (!classItem || (classItem.supervisorId !== userId && classItem.lessons.length === 0)) {
+                    return { success: false, error: "Access denied to this class" };
+                }
+            }
+
+            where.student = {
+                ...where.student,
+                classId: filters.classId
+            };
+        }
+
+        // Grade filter (admin only)
+        if (filters.gradeId && role === "admin") {
+            where.student = {
+                ...where.student,
+                gradeId: filters.gradeId
+            };
+        }
+
+        // Search filter
+        if (filters.search) {
+            where.student = {
+                ...where.student,
+                OR: [
+                    { name: { contains: filters.search, mode: 'insensitive' } },
+                    { surname: { contains: filters.search, mode: 'insensitive' } },
+                    { username: { contains: filters.search, mode: 'insensitive' } }
+                ]
+            };
+        }
+
+        // Fetch attendance records
+        const [attendances, totalCount] = await prisma.$transaction([
+            prisma.attendance.findMany({
+                where,
+                include: {
+                    student: {
+                        select: {
+                            id: true,
+                            name: true,
+                            surname: true,
+                            username: true,
+                            classId: true
+                        }
+                    },
+                    lesson: {
+                        select: {
+                            id: true,
+                            name: true,
+                            startTime: true,
+                            endTime: true,
+                            classId: true,
+                            teacherId: true
+                        }
+                    }
+                },
+                orderBy: [
+                    { lesson: { startTime: 'asc' } },
+                    { student: { name: 'asc' } }
+                ],
+                take: limit,
+                skip
+            }),
+            prisma.attendance.count({ where })
+        ]);
+
+        return {
+            success: true,
+            data: attendances,
+            totalCount
+        };
+    } catch (err) {
+        console.error("Error fetching attendance:", err);
+        return { success: false, error: "Failed to fetch attendance" };
+    }
+};
+
+/**
+ * Create or update attendance in bulk (upsert)
+ */
+export const createBulkAttendance = async (
+    data: {
+        date: Date;
+        lessonId: number;
+        studentIds: string[];
+        defaultPresent?: boolean;
+    }
+): Promise<CurrentState> => {
+    try {
+        const { userId, sessionClaims } = await auth();
+        if (!userId) {
+            return { success: false, error: true, message: "Unauthorized" };
+        }
+
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+        // Verify lesson access for teachers
+        if (role === "teacher") {
+            const lesson = await prisma.lesson.findUnique({
+                where: { id: data.lessonId },
+                include: { class: true }
+            });
+
+            if (!lesson) {
+                return { success: false, error: true, message: "Lesson not found" };
+            }
+
+            if (lesson.teacherId !== userId && lesson.class?.supervisorId !== userId) {
+                return { success: false, error: true, message: "Access denied to this lesson" };
+            }
+        } else if (role === "parent") {
+            return { success: false, error: true, message: "Parents cannot create attendance" };
+        }
+
+        // Normalize date to start of day
+        const attendanceDate = new Date(data.date);
+        attendanceDate.setHours(0, 0, 0, 0);
+
+        // Batch upsert attendance records using transaction callback
+        await prisma.$transaction(async (tx) => {
+            for (const studentId of data.studentIds) {
+                // Try to find existing record
+                const existing = await tx.attendance.findFirst({
+                    where: {
+                        date: attendanceDate,
+                        lessonId: data.lessonId,
+                        studentId
+                    }
+                });
+
+                if (existing) {
+                    // Update existing
+                    await tx.attendance.update({
+                        where: { id: existing.id },
+                        data: { present: data.defaultPresent || false }
+                    });
+                } else {
+                    // Create new
+                    await tx.attendance.create({
+                        data: {
+                            date: attendanceDate,
+                            lessonId: data.lessonId,
+                            studentId,
+                            present: data.defaultPresent || false
+                        }
+                    });
+                }
+            }
+        });
+
+        return { success: true, error: false, message: "Attendance records created/updated successfully" };
+    } catch (err) {
+        console.error("Error creating bulk attendance:", err);
+        return { success: false, error: true, message: "Failed to create attendance records" };
+    }
+};
+
+/**
+ * Update single attendance record (toggle present/absent)
+ */
+export const updateAttendance = async (
+    id: number,
+    present: boolean
+): Promise<CurrentState> => {
+    try {
+        const { userId, sessionClaims } = await auth();
+        if (!userId) {
+            return { success: false, error: true, message: "Unauthorized" };
+        }
+
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+        // Parents cannot update attendance
+        if (role === "parent") {
+            return { success: false, error: true, message: "Parents cannot update attendance" };
+        }
+
+        // Verify access for teachers
+        if (role === "teacher") {
+            const attendance = await prisma.attendance.findUnique({
+                where: { id },
+                include: {
+                    lesson: {
+                        include: { class: true }
+                    }
+                }
+            });
+
+            if (!attendance) {
+                return { success: false, error: true, message: "Attendance record not found" };
+            }
+
+            if (attendance.lesson.teacherId !== userId && attendance.lesson.class?.supervisorId !== userId) {
+                return { success: false, error: true, message: "Access denied" };
+            }
+        }
+
+        await prisma.attendance.update({
+            where: { id },
+            data: { present }
+        });
+
+        return { success: true, error: false };
+    } catch (err) {
+        console.error("Error updating attendance:", err);
+        return { success: false, error: true, message: "Failed to update attendance" };
+    }
+};
+
+/**
+ * Delete attendance record (admin only)
+ */
+export const deleteAttendance = async (
+    formData: FormData
+): Promise<CurrentState> => {
+    try {
+        const { userId, sessionClaims } = await auth();
+        if (!userId) {
+            return { success: false, error: true, message: "Unauthorized" };
+        }
+
+        const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+        // Only admins can delete attendance
+        if (role !== "admin") {
+            return { success: false, error: true, message: "Only admins can delete attendance" };
+        }
+
+        const id = formData.get("id");
+        if (!id) {
+            return { success: false, error: true, message: "Attendance ID is required" };
+        }
+
+        await prisma.attendance.delete({
+            where: { id: parseInt(id as string) }
+        });
+
+        return { success: true, error: false };
+    } catch (err) {
+        console.error("Error deleting attendance:", err);
+        return { success: false, error: true, message: "Failed to delete attendance" };
+    }
+};

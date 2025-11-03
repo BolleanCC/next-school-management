@@ -74,7 +74,7 @@ const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{item.name}</h3>
-                        {item.clerkUserId ? (
+                        {/* {item.clerkUserId ? (
                             <span
                                 className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium"
                                 title="Linked to Clerk account"
@@ -88,7 +88,7 @@ const TeachersListpage = async ({ searchParams }: { searchParams: Promise<{ [key
                             >
                                 ⚠ No Clerk
                             </span>
-                        )}
+                        )} */}
                     </div>
                     <p className="text-xs text-gray-500">{item?.email}</p>
                 </div>

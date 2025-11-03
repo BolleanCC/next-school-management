@@ -1,15 +1,5 @@
 // TEMPORARY DATA
-import { auth } from "@clerk/nextjs/server";
-
-export const getRole = async () => {
-  const { sessionClaims } = await auth();
-  return (sessionClaims?.metadata as { role?: string })?.role;
-};
-
-export const getCurrentUserId = async () => {
-  const { userId } = await auth();
-  return userId;
-};
+export { getRole, getCurrentUserId } from "@/lib/utils";
 
 export let role = "admin";
 export let currentUserId: string | null = null;

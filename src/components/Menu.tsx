@@ -1,7 +1,8 @@
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { getRole } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
+import LogoutButton from "./LogoutButton";
 
 const menuItems = [
   {
@@ -93,35 +94,33 @@ const menuItems = [
       },
     ],
   },
-  // {
-  //   title: "OTHER",
-  //   items: [
-  //     // {
-  //     //   icon: "/profile.png",
-  //     //   label: "Profile",
-  //     //   href: "/profile",
-  //     //   visible: ["admin", "teacher", "student", "parent"],
-  //     // },
-  //     // {
-  //     //   icon: "/setting.png",
-  //     //   label: "Settings",
-  //     //   href: "/settings",
-  //     //   visible: ["admin", "teacher", "student", "parent"],
-  //     // },
-  //     {
-  //       icon: "/logout.png",
-  //       label: "Logout",
-  //       href: "/logout",
-  //       visible: ["admin", "teacher", "student", "parent"],
-  //     },
-  //   ],
-  // },
+  {
+    title: "OTHER",
+    items: [
+      {
+        icon: "/profile.png",
+        label: "Profile",
+        href: "/profile",
+        visible: ["admin", "teacher", "student", "parent"],
+      },
+      // {
+      //   icon: "/setting.png",
+      //   label: "Settings",
+      //   href: "/settings",
+      //   visible: ["admin", "teacher", "student", "parent"],
+      // },
+      {
+        icon: "/logout.png",
+        label: "Logout",
+        href: "/logout",
+        visible: ["admin", "teacher", "student", "parent"],
+      },
+    ],
+  },
 ];
 
 const Menu = async () => {
-
-  const user = await currentUser();
-  const role = user?.publicMetadata.role as string;
+  const role = await getRole();
 
   return (
     <div className="m-4 text-sm">
@@ -131,7 +130,12 @@ const Menu = async () => {
             {i.title}
           </span>
           {i.items.map((item) => {
-            if (item.visible.includes(role)) {
+            if (role && item.visible.includes(role)) {
+              // Special handling for Logout button
+              if (item.label === "Logout") {
+                return <LogoutButton key={item.label} />;
+              }
+
               return (
                 <Link
                   href={item.href}

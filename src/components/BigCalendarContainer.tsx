@@ -6,9 +6,16 @@ const BigCalendarContainer = async ({ type, id }: { type: "teacherId" | "classId
     let whereClause: any;
 
     if (type === "clerkUserId") {
-        // If type is clerkUserId, first find the teacher by clerkUserId
-        const teacher = await prisma.teacher.findUnique({
-            where: { clerkUserId: id as string },
+        // If type is clerkUserId, first find the teacher by clerkUserId.
+        // Fallback to matching the teacher id directly to support legacy data
+        // where the teacher id equals the Clerk user id.
+        const teacher = await prisma.teacher.findFirst({
+            where: {
+                OR: [
+                    { clerkUserId: id as string },
+                    { id: id as string },
+                ],
+            },
             select: { id: true },
         });
 

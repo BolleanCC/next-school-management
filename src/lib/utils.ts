@@ -1,13 +1,75 @@
 import { auth } from "@clerk/nextjs/server";
+import prisma from "@/lib/prisma";
+
+type UserRole = "admin" | "teacher" | "student" | "parent";
 
 export const getRole = async () => {
-    const { sessionClaims } = await auth();
-    return (sessionClaims?.metadata as { role?: string })?.role;
+    const { sessionClaims, userId } = await auth();
+    const metadataRole = (sessionClaims?.metadata as { role?: string })?.role;
+
+    if (metadataRole && isUserRole(metadataRole)) {
+        return metadataRole;
+    }
+
+    if (!userId) {
+        return null;
+    }
+
+    return await resolveRoleFromDatabase(userId);
 };
 
 export const getCurrentUserId = async () => {
     const { userId } = await auth();
     return userId;
+};
+
+export const resolveRoleFromDatabase = async (userId: string): Promise<UserRole | null> => {
+    const teacher = await prisma.teacher.findFirst({
+        where: {
+            OR: [
+                { clerkUserId: userId },
+                { id: userId },
+            ],
+        },
+        select: { id: true },
+    });
+
+    if (teacher) {
+        return "teacher";
+    }
+
+    const student = await prisma.student.findUnique({
+        where: { id: userId },
+        select: { id: true },
+    });
+
+    if (student) {
+        return "student";
+    }
+
+    const parent = await prisma.parent.findUnique({
+        where: { id: userId },
+        select: { id: true },
+    });
+
+    if (parent) {
+        return "parent";
+    }
+
+    const admin = await prisma.admin.findUnique({
+        where: { id: userId },
+        select: { id: true },
+    });
+
+    if (admin) {
+        return "admin";
+    }
+
+    return null;
+};
+
+const isUserRole = (value: string): value is UserRole => {
+    return ["admin", "teacher", "student", "parent"].includes(value);
 };
 
 /**

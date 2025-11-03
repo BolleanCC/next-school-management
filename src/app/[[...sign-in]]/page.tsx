@@ -113,14 +113,14 @@ const LoginPage = () => {
                         {/* Submit Button */}
                         <SignIn.Action
                             submit
-                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+                            className="text-gray-500 border border-gray-300 font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition"
                         >
                             Sign In
                         </SignIn.Action>
 
                         {/* Footer */}
                         <div className="text-center text-xs text-gray-400 pt-4 border-t border-gray-100">
-                            Secure login powered by modern authentication
+                            Secure login powered by Clerk
                         </div>
                     </SignIn.Step>
                 </SignIn.Root>

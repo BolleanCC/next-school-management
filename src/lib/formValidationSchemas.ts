@@ -168,3 +168,34 @@ export const assignmentSchema = z.object({
 });
 
 export type AssignmentSchema = z.infer<typeof assignmentSchema>;
+
+// Attendance schemas
+export const attendanceSchema = z.object({
+    id: z.coerce.number().optional(),
+    date: z.coerce.date({ message: "Date is required!" }),
+    present: z.boolean(),
+    studentId: z.string().min(1, { message: "Student is required!" }),
+    lessonId: z.coerce.number({ message: "Lesson is required!" }),
+});
+
+export type AttendanceSchema = z.infer<typeof attendanceSchema>;
+
+export const bulkAttendanceSchema = z.object({
+    date: z.coerce.date({ message: "Date is required!" }),
+    lessonId: z.coerce.number({ message: "Lesson is required!" }),
+    studentIds: z.array(z.string()).min(1, { message: "At least one student is required!" }),
+    defaultPresent: z.boolean().optional().default(false),
+});
+
+export type BulkAttendanceSchema = z.infer<typeof bulkAttendanceSchema>;
+
+export const attendanceFilterSchema = z.object({
+    date: z.string().optional(),
+    gradeId: z.coerce.number().optional(),
+    classId: z.coerce.number().optional(),
+    lessonId: z.coerce.number().optional(),
+    search: z.string().optional(),
+    status: z.enum(['present', 'absent', 'all']).optional().default('all'),
+});
+
+export type AttendanceFilterSchema = z.infer<typeof attendanceFilterSchema>;

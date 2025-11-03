@@ -19,11 +19,33 @@ const isProtectedRoute = createRouteMatcher([
 // Define public routes
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/']);
 
-console.log(matchers);
-
 export default clerkMiddleware(async (auth, req) => {
+    if (req.nextUrl.pathname.startsWith('/api/auth/role')) {
+        return NextResponse.next();
+    }
+
     const { userId, sessionClaims } = await auth();
-    const role = (sessionClaims?.metadata as { role?: string })?.role;
+    let role = (sessionClaims?.metadata as { role?: string })?.role;
+
+    if (userId && !role) {
+        try {
+            const roleResponse = await fetch(new URL('/api/auth/role', req.url), {
+                headers: {
+                    cookie: req.headers.get('cookie') ?? '',
+                },
+                cache: 'no-store',
+            });
+
+            if (roleResponse.ok) {
+                const body = await roleResponse.json();
+                if (body?.role) {
+                    role = body.role;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to resolve role in middleware:', error);
+        }
+    }
 
     // If user is not signed in and trying to access protected route, redirect to sign-in
     if (!userId && isProtectedRoute(req)) {
