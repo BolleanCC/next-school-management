@@ -44,46 +44,52 @@ const columns = [
     },
 ];
 
-const createRenderRow = (userRole: string | undefined) => (item: StudentList) => (
-    <tr
-        key={item.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
-    >
-        <td className="flex items-center gap-4 p-4">
-            <Image
-                src={item.img || "/noAvatar.png"}
-                alt=""
-                width={40}
-                height={40}
-                className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
-            />
-            <div className="flex flex-col">
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-xs text-gray-500">
-                    {item.class ? item.class.name : "⚠️ No Class"}
-                </p>
-            </div>
-        </td>
-        <td className="hidden md:table-cell p-4">{item.username}</td>
-        <td className="hidden md:table-cell p-4">
-            {item.class ? item.class.name[0] : "-"}
-        </td>
-        <td className="hidden lg:table-cell p-4">{item.phone}</td>
-        <td className="hidden lg:table-cell p-4">{item.address}</td>
-        <td className="p-4">
-            <div className="flex items-center gap-2">
-                <Link href={`/list/students/${item.id}`}>
-                    <button className="w-7 h-7 flex items-center justify-center rounded-full bg-sky">
-                        <Image src="/view.png" alt="" width={16} height={16} />
-                    </button>
-                </Link>
-                {userRole === "admin" && (
-                    <FormModal table="student" type="delete" id={item.id} />
-                )}
-            </div>
-        </td>
-    </tr>
-);
+const createRenderRow = (userRole: string | undefined) => {
+    const StudentRow = (item: StudentList) => (
+        <tr
+            key={item.id}
+            className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-purpleLight"
+        >
+            <td className="flex items-center gap-4 p-4">
+                <Image
+                    src={item.img || "/noAvatar.png"}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
+                />
+                <div className="flex flex-col">
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <p className="text-xs text-gray-500">
+                        {item.class ? item.class.name : "⚠️ No Class"}
+                    </p>
+                </div>
+            </td>
+            <td className="hidden md:table-cell p-4">{item.username}</td>
+            <td className="hidden md:table-cell p-4">
+                {item.class ? item.class.name[0] : "-"}
+            </td>
+            <td className="hidden lg:table-cell p-4">{item.phone}</td>
+            <td className="hidden lg:table-cell p-4">{item.address}</td>
+            <td className="p-4">
+                <div className="flex items-center gap-2">
+                    <Link href={`/list/students/${item.id}`}>
+                        <button className="w-7 h-7 flex items-center justify-center rounded-full bg-sky">
+                            <Image src="/view.png" alt="" width={16} height={16} />
+                        </button>
+                    </Link>
+                    {userRole === "admin" && (
+                        <FormModal table="student" type="delete" id={item.id} />
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
+
+    StudentRow.displayName = "StudentRow";
+
+    return StudentRow;
+};
 
 const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined; }> }) => {
     const resolvedSearchParams = await searchParams;
@@ -150,7 +156,7 @@ const StudentsListpage = async ({ searchParams }: { searchParams: Promise<{ [key
         prisma.student.count({ where: query }),
     ]);
 
-    const renderRow = createRenderRow(currentRole);
+    const renderRow = createRenderRow(currentRole ?? undefined);
 
     return <div className="p-4 rounded-md bg-white flex-1 mt-0">
         {/* {TOP} */}
