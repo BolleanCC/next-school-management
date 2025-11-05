@@ -1,5 +1,9 @@
 "use server";
 
+// NOTE: "use server" files automatically run on Node.js runtime.
+// No need for explicit runtime declaration - it would cause a build error.
+// Prisma is safe to use here as all server actions run on Node.js, not Edge.
+
 import {
     AnnouncementSchema,
     AssignmentSchema,
