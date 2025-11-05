@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import react-big-calendar base styles - REQUIRED for production */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+
 .react-calendar {
     width: 100% !important;
     border: none !important;

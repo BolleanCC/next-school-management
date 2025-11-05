@@ -73,7 +73,7 @@ const BigCalendarContainer = async ({ type, id }: { type: "teacherId" | "classId
         );
     }
 
-    return <div className=""><BigCalendar data={schedule} /></div>;
+    return <div className="h-full"><BigCalendar data={schedule} /></div>;
 };
 
 export default BigCalendarContainer;
