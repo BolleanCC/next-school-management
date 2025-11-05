@@ -44,10 +44,11 @@ const TeacherForm = ({
 
     const [isPending, startTransition] = useTransition();
 
-    const onSubmit = handleSubmit((data) => {
-        console.log(data);
+    const onSubmit = handleSubmit((formData) => {
+        console.log(formData);
         startTransition(() => {
-            formAction({ ...data, img: img?.secure_url });
+            // Use new image if uploaded, otherwise keep existing image
+            formAction({ ...formData, img: img?.secure_url || data?.img });
         });
     });
 
